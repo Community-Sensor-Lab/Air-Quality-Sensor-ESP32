@@ -12,8 +12,8 @@
 #define POST_PAYLOAD "\"}"
 // #define SERVER "script.google.com"  // Server URL
 
-#define SERVER_GOOGLE_SCRIPT  "script.google.com"; 
-#define SERVER_GOOGLE_USERCONTENT  "script.googleusercontent.com"; 
+#define SERVER_GOOGLE_SCRIPT  "script.google.com"
+#define SERVER_GOOGLE_USERCONTENT  "script.googleusercontent.com"
 
 
 // google
@@ -62,7 +62,7 @@ void initializeClient() {
 * @brief Makes an http get request and handles the response message by calling handleResponse()
 **/
 void httpGet(String url) {
-  //Serial.println("Calling httpGet...");
+  Serial.println("Calling httpGet...");
   client.println("GET " + url + " HTTP/1.1");
   client.println("Host: "  SERVER_GOOGLE_USERCONTENT);
   client.println("Connection: close");
@@ -91,6 +91,7 @@ void httpGet(String url) {
 
 
 void doPost(String outstr) {
+  Serial.println("Calling httpPost...");
 
   String payload = outstr + POST_PAYLOAD;
   Serial.println(payload);
@@ -100,12 +101,9 @@ void doPost(String outstr) {
     Serial.println("Connection failed");
   else {
     Serial.println("Connected to server");
-    // Make a HTTP request:
-    // client.println("POST /macros/s/AKfycbxwxxCaHA24OhuHJWrZQ79a6qOfYCm4-fPbDFGRt9JSZEGv345UuFR-kJw6Sgv7wZq3Qw/exec? HTTP/1.0");//value=Hello HTTP/1.0");
     client.println("POST /macros/s/" + String(provisionInfo.gsid) + "/exec? HTTP/1.0");  //value=Hello HTTP/1.0");
     client.println("Host: " SERVER_GOOGLE_SCRIPT);
     client.println("Content-Type: application/x-www-form-urlencoded");
-    //client.println("Connection: close");
     client.print("Content-Length: ");
     client.println(payload.length());
     client.println();
@@ -132,7 +130,7 @@ void doPost(String outstr) {
     }
 
     delay(200);  // Allow TLS setup
-    handleResponse()
+    handleResponse();
   }
 }
 
@@ -154,7 +152,6 @@ void handleResponse() {
      
       Serial.print("Parsed sampling rate: ");
       Serial.println(samplingPeriod);
-    
     }
 
     // Future application: Remotely turning off the screen
@@ -162,8 +159,6 @@ void handleResponse() {
   }
  // Handle Redirect (302 Moved Temporarily)
   else if (response.indexOf("302 Moved Temporarily") != -1) {
-    //Serial.println("Handling 302 Moved Temporarily redirect ...");
-
     // Extract the "Location" header (URL to redirect to)
     int locIndex = response.indexOf("Location: ");
     if (locIndex != -1) {
@@ -182,7 +177,7 @@ void handleResponse() {
       String pathAndQuery = locationURL.substring(pathIndex + 4);  // Skip ".com"
       
     
-      initializeClient(SERVER_GOOGLE_USERCONTENT);
+      initializeClient();
       httpGet(pathAndQuery);
     } else {
       Serial.println("No Location header found.");
