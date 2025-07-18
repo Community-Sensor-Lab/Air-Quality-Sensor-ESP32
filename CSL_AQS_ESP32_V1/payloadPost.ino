@@ -64,7 +64,7 @@ void initializeClient() {
 void httpGet(String url) {
   //Serial.println("Calling httpGet...");
   client.println("GET " + url + " HTTP/1.1");
-  client.println("Host: " + String(SERVER_GOOGLE_USERCONTENT));
+  client.println("Host: "  SERVER_GOOGLE_USERCONTENT);
   client.println("Connection: close");
   client.println();
 
@@ -143,11 +143,11 @@ void doPost(String outstr) {
 void handleResponse() {
   if (response.indexOf("200 OK") != -1) {
     //Serial.println("Successfully fetched data from google AppScript");
-    int srateIndex = response.indexOf("srate:");
+    int srateIndex = response.indexOf("response:");
     Serial.println("RESPONSE: ");
     Serial.println(response);
     if (srateIndex != -1) {
-      int valueStart = srateIndex + 6; // Skip past "srate:"
+      int valueStart = srateIndex + 9; // Skip past "srate:"
       int valueEnd = response.indexOf('\n', valueStart); // Find the end of the line
       String rateStr = response.substring(valueStart, valueEnd);
       samplingPeriod = rateStr.toInt();
