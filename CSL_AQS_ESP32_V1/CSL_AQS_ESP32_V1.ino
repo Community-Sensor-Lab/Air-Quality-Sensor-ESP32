@@ -16,6 +16,8 @@
 
 */
 #include "CSL_AQS_ESP32_V1.h"
+int samplingRate = 60000; // Default is 60 seconds
+String response = "";
 
 void setup() {
 
@@ -98,5 +100,5 @@ void loop() {
     connectToWiFi();
   }
 
-  delay(60000); // 1 minute
+  delay(samplingRate); // 1 minute
 }

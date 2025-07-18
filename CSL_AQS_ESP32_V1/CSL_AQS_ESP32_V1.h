@@ -3,11 +3,9 @@
 
 #include <SPI.h>
 #include <SD.h>
-#include <FS.h>
 #include <Wire.h>
 #include <WiFi.h>
 #include <RTClib.h>
-// #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>  // OLED library
 
 #define VBATPIN A13  // this is also D9 button A disable pullup to read analog
