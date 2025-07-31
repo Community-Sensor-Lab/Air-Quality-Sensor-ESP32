@@ -3,6 +3,7 @@
 #include <DNSServer.h>
 #include <WebServer.h>
 #include "CSL_AQS_ESP32_V1.h"
+#include "esp_mac.h"  // required - exposes esp_mac_type_t values
 
 /**
 * Starts a wifi access point with a unique name 'csl-xxxx' and starts a server.
@@ -13,12 +14,27 @@
 */
 
 //return the mac address globally
-String mac_address(){
-  char mac_ssid[16];
-  //stored the build in softAPmacAddress value into the mac_ssid array
-  snprintf(mac_ssid, 16, "csl-%02x%02x", WiFi.softAPmacAddress()[4], WiFi.softAPmacAddress()[5]);
-  return String(mac_ssid); //convert the array values into a single string
+// String mac_address(){
+//   char mac_ssid[16];
+//   //stored the build in softAPmacAddress value into the mac_ssid array
+//   snprintf(mac_ssid, 16, "csl-%02x%02x", WiFi.softAPmacAddress()[4], WiFi.softAPmacAddress()[5]);
+//   return String(mac_ssid); //convert the array values into a single string
+// }
+String mac_address() {
+  esp_mac_type_t interface = ESP_MAC_WIFI_SOFTAP;
+  String mac = "";
+
+  unsigned char mac_base[6] = {0};
+
+  if (esp_read_mac(mac_base, interface) == ESP_OK) {
+    char buffer[18];  // 6*2 characters for hex + 5 characters for colons + 1 character for null terminator
+    sprintf(buffer, "csl-%02x%02x",  mac_base[4], mac_base[5]);
+    mac = buffer;
+  }
+
+  return mac;
 }
+
 
 //Stores the provision wifi and password and return wifi to be used globally
 String saveProvision(String ssid, String passcode, String gsid){

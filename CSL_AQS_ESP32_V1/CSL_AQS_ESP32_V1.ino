@@ -57,24 +57,21 @@ void loop() {
 
   String sen55 = readSEN55();
   String scd41 = readSCD41();
-  String rssi_quality; //intializes wifi quality variable
-  DateTime now = rtc.now();  // fetch the date + time
-  String mac_ssid= mac_address(); //mac address of sensor
-  String wifi_ssid= provisionInfo.ssid; //wifi variable used in the sheet
-  int wifi_rssi= WiFi.RSSI(); //variable for the rssi strength
+  String rssi_quality;                    //intializes wifi quality variable
+  DateTime now = rtc.now();               // fetch the date + time
+  String mac_ssid = mac_address();        //mac address of sensor
+  String wifi_ssid = provisionInfo.ssid;  //wifi variable used in the sheet
+  int wifi_rssi = WiFi.RSSI();            //variable for the rssi strength
 
   //determines quality of wifi speed
-  if (wifi_rssi > -50){
-    rssi_quality= "Excellent";
-  }
-  else if(wifi_rssi > -60) {
-    rssi_quality= "Good";
-  }
-  else if (wifi_rssi > -70) {
-    rssi_quality= "Fair";
-  }
-  else {
-    rssi_quality= "Poor";
+  if (wifi_rssi > -50) {
+    rssi_quality = "Excellent";
+  } else if (wifi_rssi > -60) {
+    rssi_quality = "Good";
+  } else if (wifi_rssi > -70) {
+    rssi_quality = "Fair";
+  } else {
+    rssi_quality = "Poor";
   }
 
   pinMode(VBATPIN, INPUT);  // read battery voltage
@@ -85,13 +82,13 @@ void loop() {
   sprintf(tstring, "%02u/%02u/%02u %02u:%02u:%02u, ",
           now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
 
-  String tempString = String(tstring) + bme + scd41 + sen55 + String(sensorData.Vbat) + "," + mac_ssid + "," + wifi_ssid + ","+ wifi_rssi + "," + rssi_quality; //adds all the clumns values
+  String tempString = String(tstring) + bme + scd41 + sen55 + String(sensorData.Vbat) + "," + mac_ssid + "," + wifi_ssid + "," + wifi_rssi + "," + rssi_quality;  //adds all the clumns values
 
   Serial.println(header);
   Serial.println(tempString);
 
   // if button B pressed then continue without wifi
-  if(provisionInfo.noWifi) {
+  if (provisionInfo.noWifi) {
     Serial.println("No WiFi connection");
     display.println("No WiFi mode");
     display.display();
@@ -113,9 +110,6 @@ void loop() {
   if (!provisionInfo.valid) {
     softAPprovision();
     connectToWiFi();
-
-   
   }
-  delay(60000); // 1 minute
+  delay(60000);  // 1 minute
 }
-
