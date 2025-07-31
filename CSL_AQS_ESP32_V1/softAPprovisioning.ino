@@ -207,14 +207,14 @@ String buildProvisioningPage() {
 
 void connectToWiFi() {
   // try to connect to wifi or continue without wifi
-  Serial.printf("Trying to connect to wifi: %s\n", provisionInfo.ssid);
+  Serial.printf("Trying to connect to WiFi: %s\n", provisionInfo.ssid);
   Serial.printf("To force provisioning press button A\n");
-  Serial.printf("To continue without wifi press button B\n");
+  Serial.printf("To continue without WiFi press button B\n");
   display.setCursor(0, 0);
   display.clearDisplay();
-  display.printf("Connecting to wifi: \n\n%s\n", provisionInfo.ssid);
+  display.printf("Connecting to WiFi: \n\n%s\n", provisionInfo.ssid);
   display.printf("Provisioning: bttn A\n");
-  display.printf("No wifi: bttn B\n");
+  display.printf("No WiFi: bttn B\n");
   display.display();
   
   char mac_ssid[16];
@@ -236,8 +236,8 @@ void connectToWiFi() {
     }
 
     if (provisionInfo.noWifi) { // someone pressed button B
-      Serial.println("\nContinuing without wifi connection");
-      display.println("no wifi mode");
+      Serial.println("\nContinuing without WiFi connection");
+      display.println("no WiFi mode");
       display.display();
       break;
     }
@@ -245,10 +245,10 @@ void connectToWiFi() {
     // connect to wifi0
     WiFi.mode(WIFI_STA);
     WiFi.begin(provisionInfo.ssid, provisionInfo.passcode);
-    Serial.println("Connecting Wifi... ");
+    Serial.println("Connecting WiFi... ");
     display.setCursor(0,0);
     display.clearDisplay();
-    display.println("Provision Successfull\n\nConnecting Wifi...");
+    display.println("Provision Successfull\n\nConnecting WiFi...");
     display.display();
 
     while (WiFi.status() != WL_CONNECTED && !provisionInfo.noWifi && provisionInfo.valid) {
@@ -258,8 +258,8 @@ void connectToWiFi() {
 
     if (WiFi.status() == WL_CONNECTED) {
       delay(1000);
-      Serial.printf("Connected to wifi: %s\n", provisionInfo.ssid);
-      display.printf("\nConnected to wifi: \n\n%s", provisionInfo.ssid);
+      Serial.printf("Connected to WiFi: %s\n", provisionInfo.ssid);
+      display.printf("\nConnected to WiFi: \n\n%s", provisionInfo.ssid);
       display.display();
       break;
     }
