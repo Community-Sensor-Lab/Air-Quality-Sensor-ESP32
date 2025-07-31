@@ -36,7 +36,7 @@ typedef struct {
 } data;
 data sensorData; // instantiate a sensor data structure
 
-String header = "DateTime, Tbme, Pbme, RHbme, CO2, Tco2, RHco2, mPm1.0, mPm2.5, mPm4.0, mPm10, RHsen, Tsen, VOCs, NOx, Vbat, ID (Mac Address), Wifi, Wifi rssi (dBm), Wifi Quality"; // the title of the columns
+String header = "DateTime, Tbme, Pbme, RHbme, CO2, Tco2, RHco2, mPm1.0, mPm2.5, mPm4.0, mPm10, RHsen, Tsen, VOCs, NOx, Vbat, ID (Mac Address), WiFi, WiFi rssi (dBm), WiFi Quality"; // the title of the columns
 
 // large Oled display
 Adafruit_SH1107 display = Adafruit_SH1107(64, 128, &Wire);
