@@ -11,14 +11,33 @@
 * (gsid is the unique identifier for google script). Parses the response and decodes 
 * the string for any %-encoded characters, and saves to memory
 */
+
+//return the mac address globally
+String mac_address(){
+  char mac_ssid[16];
+  //stored the build in softAPmacAddress value into the mac_ssid array
+  snprintf(mac_ssid, 16, "csl-%02x%02x", WiFi.softAPmacAddress()[4], WiFi.softAPmacAddress()[5]);
+  return String(mac_ssid); //convert the array values into a single string
+}
+
+//Stores the provision wifi and password and return wifi to be used globally
+String saveProvision(String ssid, String passcode, String gsid){
+  // save provisioning info to memory
+  strcpy(provisionInfo.ssid,ssid.c_str());
+  strcpy(provisionInfo.passcode,passcode.c_str());
+  strcpy(provisionInfo.gsid,gsid.c_str());
+  provisionInfo.valid = true;
+  provisionInfo.noWifi = false;
+  storeProvisionInfo();
+  return provisionInfo.ssid;
+}
+
 void softAPprovision() {
 
   WiFiServer server(80);
   WiFiClient client;
+  String mac_ssid= mac_address();
 
-  // Get MAC address and make a unique ssid with it
-  char mac_ssid[16];
-  snprintf(mac_ssid, 16, "csl-%02x%02x", WiFi.softAPmacAddress()[4], WiFi.softAPmacAddress()[5]);
   
   IPAddress local_ip(192, 168, 4, 1);
   IPAddress gateway(192, 168, 1, 1);
@@ -27,7 +46,7 @@ void softAPprovision() {
   WiFi.mode(WIFI_MODE_AP);
   WiFi.softAPConfig(local_ip, gateway, subnet);
   // start softAP
-  if (WiFi.softAP(mac_ssid)) {  // start AP with mac_ssid
+  if (WiFi.softAP(mac_ssid.c_str())) {  // start AP with mac_ssid
     
     Serial.printf("Provisioning: connect to WiFi %s\n.Then open browser to ip: %s\n", mac_ssid, WiFi.softAPIP().toString().c_str());
     display.printf("Connect to WiFi \n\n%s\n", mac_ssid, WiFi.softAPIP().toString().c_str());
@@ -66,7 +85,7 @@ void softAPprovision() {
               client.println("HTTP/1.1 200 OK");  // respond ok
               client.println("Content-type:text/html");
               client.println();
-              client.print(buildProvisioningPage());  // send provisioning page
+              client.print(buildProvisioningPage());  // send provisioning page here
               client.println();
               break;
             } else {
@@ -80,6 +99,7 @@ void softAPprovision() {
                 gsid = decodeUrl(gsid);
                 //Serial.printf("Saving to memory ssid: %s, passcode: %s, gsid: %s\n", ssid.c_str(), passcode.c_str(), gsid.c_str());
 
+                /*
                 // save provisioning info to memory
                 strcpy(provisionInfo.ssid,ssid.c_str());
                 strcpy(provisionInfo.passcode,passcode.c_str());
@@ -87,6 +107,8 @@ void softAPprovision() {
                 provisionInfo.valid = true;
                 provisionInfo.noWifi = false;
                 storeProvisionInfo();
+                */
+                saveProvision(ssid, passcode, gsid);
 
                 client.stop();            // got our data so stop
                 WiFi.softAPdisconnect();  // disconnect and turn off
@@ -143,18 +165,24 @@ String decodeUrl(const String& encoded) {
 }
 
 
-// Provisioning webpage showing avaliable networks -- by Fahmin Raman
+// updated webpage to show avaliable networks:
 String buildProvisioningPage() {
-  int n = WiFi.scanNetworks();
-  String page = "<!DOCTYPE HTML><html><head><title>Provision</title></head><body>";
-  page += "<form action=\"/get\">";
+  int n = WiFi.scanNetworks(); //scans avaliable wifi using the built in function and stores it in n variablr
+  String page = "<!DOCTYPE HTML><html><head><title>Provision</title></head><body>"; //sets up the title of the page
+  page += "<form action=\"/get\">"; //adds a form to the page anf uses get request
+
+  //uses the select function  that creates a dropdown list
+  //the option value iterates through n with the networks and add it to the select column as an option 
   page += "SSID: <select name=\"SSID\">";
   for (int i = 0; i < n; i++) {
-    page += "<option value=\"" + WiFi.SSID(i) + "\">" + WiFi.SSID(i) + "</option>";
+    page += "<option value=\"" + WiFi.SSID(i) + "\">" + WiFi.SSID(i) + " (" + String(WiFi.RSSI(i)) + " dBm)" + "</option>";   
   }
   page += "</select><br>";
+  //text input for passcode
   page += "Passcode: <input type=\"password\" name=\"passcode\"><br>";
+  //text input for GSID
   page += "GSID: <input type=\"text\" name=\"GSID\"><br>";
+  //adds a submit button
   page += "<input type=\"submit\" value=\"Submit\">";
   page += "</form></body></html>";
   return page;
@@ -163,18 +191,19 @@ String buildProvisioningPage() {
 
 void connectToWiFi() {
   // try to connect to wifi or continue without wifi
-  Serial.printf("Trying to connect to WiFi: %s\n", provisionInfo.ssid);
+  Serial.printf("Trying to connect to wifi: %s\n", provisionInfo.ssid);
   Serial.printf("To force provisioning press button A\n");
-  Serial.printf("To continue without WiFi press button B\n");
+  Serial.printf("To continue without wifi press button B\n");
   display.setCursor(0, 0);
   display.clearDisplay();
-  display.printf("Connecting to WiFi: \n\n%s\n", provisionInfo.ssid);
+  display.printf("Connecting to wifi: \n\n%s\n", provisionInfo.ssid);
   display.printf("Provisioning: bttn A\n");
-  display.printf("No WiFi: bttn B\n");
+  display.printf("No wifi: bttn B\n");
   display.display();
   
   char mac_ssid[16];
   snprintf(mac_ssid, 16, "csl-%02x%02x", WiFi.softAPmacAddress()[4], WiFi.softAPmacAddress()[5]);
+  
 
   while (WiFi.status() != WL_CONNECTED && !provisionInfo.noWifi) {
     delay(10000);  // wait 10 in case forced provisioning
@@ -184,14 +213,15 @@ void connectToWiFi() {
       display.setCursor(0,0);
       Serial.println("Going into provisioning mode");
       display.println("Provisioning mode\n");
+      //display.print("Connect to wifi:");
       display.display();
       
       softAPprovision();
     }
 
     if (provisionInfo.noWifi) { // someone pressed button B
-      Serial.println("\nContinuing without WiFi connection");
-      display.println("No WiFi mode");
+      Serial.println("\nContinuing without wifi connection");
+      display.println("no wifi mode");
       display.display();
       break;
     }
@@ -199,10 +229,10 @@ void connectToWiFi() {
     // connect to wifi0
     WiFi.mode(WIFI_STA);
     WiFi.begin(provisionInfo.ssid, provisionInfo.passcode);
-    Serial.println("Connecting WiFi... ");
+    Serial.println("Connecting Wifi... ");
     display.setCursor(0,0);
     display.clearDisplay();
-    display.println("Provision Successfull\n\nConnecting WiFi...");
+    display.println("Provision Successfull\n\nConnecting Wifi...");
     display.display();
 
     while (WiFi.status() != WL_CONNECTED && !provisionInfo.noWifi && provisionInfo.valid) {
@@ -212,8 +242,8 @@ void connectToWiFi() {
 
     if (WiFi.status() == WL_CONNECTED) {
       delay(1000);
-      Serial.printf("Connected to WiFi: %s\n", provisionInfo.ssid);
-      display.printf("\nConnected to WiFi: \n\n%s", provisionInfo.ssid);
+      Serial.printf("Connected to wifi: %s\n", provisionInfo.ssid);
+      display.printf("\nConnected to wifi: \n\n%s", provisionInfo.ssid);
       display.display();
       break;
     }

@@ -52,8 +52,18 @@ void initializeRTC() {
   } else {
     Serial.println("RTC connected");
     display.println("RTC connected");
+    
+    DateTime now= rtc.now(); //UPDATE JULY 29
+
+    char tstring[128];
+    sprintf(tstring, "%02u/%02u/%02u %02u:%02u:%02u, ", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println("Current Date and Time\n");
+    display.println(tstring);
     display.display();
+    delay(3000);
   }
-  // TO SET TIME at compile : run once to syncro then run again with line commented out
-  // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+   //TO SET TIME at compile : run once to syncro then run again with line commented out
+   //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
 }
