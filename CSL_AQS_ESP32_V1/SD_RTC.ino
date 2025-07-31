@@ -62,7 +62,7 @@ void initializeRTC() {
     display.println("Current Date and Time\n");
     display.println(tstring);
     display.display();
-    delay(3000);
+    delay(8000);
   }
    //TO SET TIME at compile : run once to syncro then run again with line commented out
    //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
