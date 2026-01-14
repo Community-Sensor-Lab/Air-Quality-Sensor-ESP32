@@ -64,8 +64,8 @@ void softAPprovision() {
   // start softAP
   if (WiFi.softAP(mac_ssid.c_str())) {  // start AP with mac_ssid
     
-    Serial.printf("Provisioning: connect to WiFi %s\n.Then open browser to ip: %s\n", mac_ssid, WiFi.softAPIP().toString().c_str());
-    display.printf("Connect to WiFi \n\n%s\n", mac_ssid, WiFi.softAPIP().toString().c_str());
+    Serial.printf("Provisioning: connect to WiFi %s\n.Then open browser to ip: %s\n", mac_ssid, WiFi.softAPIP().toString().c_str() );
+    display.printf("Connect to WiFi \n\n%s\n", mac_ssid, WiFi.softAPIP().toString().c_str() );
     display.display();
   } else {
     Serial.println("SoftAP start failed!");

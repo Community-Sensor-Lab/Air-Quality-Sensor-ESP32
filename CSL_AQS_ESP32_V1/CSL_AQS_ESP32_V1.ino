@@ -30,7 +30,7 @@ void setup() {
   initializeBME();  // TPRH
   initializeRTC();  // clock
 
-  logfile.println(header);
+  logfile.println(HEADER);
   logfile.flush();
 
   initializeEEPROM();
@@ -41,9 +41,9 @@ void setup() {
 
   initializeClient();
   Serial.println("Adding header to google sheet");
-  //Serial.println(PRE_PAYLOAD_ADD_HEADER + header);
+  Serial.println(String(PRE_PAYLOAD_ADD_HEADER HEADER));
 
-  doPost(PRE_PAYLOAD_ADD_HEADER + header);
+  doPost(PRE_PAYLOAD_ADD_HEADER HEADER);
 
   Serial.println("\nDone adding header to google sheet");
 
@@ -70,7 +70,7 @@ void loop() {
     rssi_quality = "Good";
   } else if (wifi_rssi > -70) {
     rssi_quality = "Fair";
-  } else {
+  } else { 
     rssi_quality = "Poor";
   }
 
@@ -84,7 +84,7 @@ void loop() {
 
   String tempString = String(tstring) + bme + scd41 + sen55 + String(sensorData.Vbat) + "," + mac_ssid + "," + wifi_ssid + "," + wifi_rssi + "," + rssi_quality;  //adds all the clumns values
 
-  Serial.println(header);
+  Serial.println(HEADER);
   Serial.println(tempString);
 
   // if button B pressed then continue without wifi
