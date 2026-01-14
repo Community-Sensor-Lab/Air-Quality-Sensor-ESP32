@@ -4,7 +4,7 @@
 void initializeSD() {
 
   if (!SD.begin()) {  // see if the card is present and can be initialized:
-    Serial.println("Card mount failed");
+    Serial.println("SD card mount failed");
     return;
   } else {
     uint8_t cardType = SD.cardType();
