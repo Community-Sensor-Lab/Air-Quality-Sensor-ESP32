@@ -61,9 +61,9 @@ void loop() {
   DateTime now = rtc.now();               // fetch the date + time
   String mac_ssid = mac_address();        //mac address of sensor
   String wifi_ssid = provisionInfo.ssid;  //wifi variable used in the sheet
-  int wifi_rssi = WiFi.RSSI();            //variable for the rssi strength
 
   //determines quality of wifi speed
+  int wifi_rssi = WiFi.RSSI();            //variable for the rssi strength
   if (wifi_rssi > -50) {
     rssi_quality = "Excellent";
   } else if (wifi_rssi > -60) {
