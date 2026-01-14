@@ -122,10 +122,15 @@ String readSEN55() {
   char errorMessage[256];
   delay(1000);
 
-  error = SEN55.readMeasuredValues(
-          sensorData.mPm1_0,sensorData.mPm2_5,sensorData.mPm4_0,
-          sensorData.mPm10,sensorData.RHsen,sensorData.Tsen,
-          sensorData.VOCs,sensorData.NOx);
+  error = SEN55.readMeasuredValues( 
+            sensorData.mPm1_0,
+            sensorData.mPm2_5,
+            sensorData.mPm4_0,
+            sensorData.mPm10,
+            sensorData.RHsen,
+            sensorData.Tsen,
+            sensorData.VOCs,
+            sensorData.NOx );
 
   if (error) {
     Serial.print("Error trying to execute readMeasuredValues(): ");
@@ -133,9 +138,40 @@ String readSEN55() {
     Serial.println(errorMessage);
   }
 
-  String SEN55_String = String(sensorData.mPm1_0) + String(", ") + String(sensorData.mPm2_5) + String(", ") + String(sensorData.mPm4_0) + String(", ")
-                        + String(sensorData.mPm10) + String(", ") + String(sensorData.RHsen) + String(", ") + String(sensorData.Tsen) + String(", ") 
-                        + String(sensorData.VOCs) + String(", ") + String(sensorData.NOx) + String(", ");
+  error = SEN55.readMeasuredPmValues( 
+            sensorData.mPm1_0,
+            sensorData.mPm2_5,
+            sensorData.mPm4_0,
+            sensorData.mPm10,            
+            sensorData.cPm0_5,
+            sensorData.cPm1_0,
+            sensorData.cPm2_5,
+            sensorData.cPm4_0,
+            sensorData.cPm10,            
+            sensorData.tpSize);
+
+  if (error) {
+    Serial.print("Error trying to execute readMeasuredPmValues(): ");
+    errorToString(error, errorMessage, 256);
+    Serial.println(errorMessage);
+  }
+
+  String SEN55_String = String(sensorData.mPm1_0) + String(", ") 
+                      + String(sensorData.mPm2_5) + String(", ") 
+                      + String(sensorData.mPm4_0) + String(", ")
+                      + String(sensorData.mPm10)  + String(", ")
+
+                      + String(sensorData.cPm0_5) + String(", ") 
+                      + String(sensorData.cPm1_0) + String(", ") 
+                      + String(sensorData.cPm2_5) + String(", ") 
+                      + String(sensorData.cPm4_0) + String(", ")
+                      + String(sensorData.cPm10)  + String(", ")
+                      + String(sensorData.tpSize) + String(", ")
+
+                      + String(sensorData.RHsen) + String(", ") 
+                      + String(sensorData.Tsen)  + String(", ") 
+                      + String(sensorData.VOCs)  + String(", ") 
+                      + String(sensorData.NOx)   + String(", ");
 
   return SEN55_String;
 }

@@ -18,25 +18,38 @@
 /* STRUCT TO STORE ALL SENSOR DATA */
 typedef struct {
   DateTime now; 
-  float Tbme; // BME280 temperature C
-  float Pbme; // BME280 pressure mBar
+  float Tbme;  // BME280 temperature C
+  float Pbme;  // BME280 pressure mBar
   float RHbme; // BME280 relative humidity %
+
   uint16_t CO2; // SCD41 C02 in ppm
-  float Tco2; // SCD41 temperature C
-  float RHco2; // SCD41 relative humidity %
+  float Tco2;   // SCD41 temperature C
+  float RHco2;  // SCD41 relative humidity %
+  
   float mPm1_0; // SEN55 pm1.0 in ug/m^3
   float mPm2_5; // SEN55 pm2.5 in ug/m^3
   float mPm4_0; // SEN55 pm4.0 in ug/m^3
-  float mPm10; // SEN55 pm10 in ug/m^3
+  float mPm10;  // SEN55 pm10  in ug/m^3
+
+  float cPm0_5; // SEN55 pm0.5 in #/cm^3
+  float cPm1_0; // SEN55 pm1.0 in #/cm^3
+  float cPm2_5; // SEN55 pm2.5 in #/cm^3
+  float cPm4_0; // SEN55 pm4.0 in #/cm^3
+  float cPm10;  // SEN55 pm10  in #/cm^3
+  float tpSize; // SEN55 typical particle Size
+
   float RHsen; // SEN55 relative humidity %
-  float Tsen; // SEN55 temperature C
-  float VOCs; // SEN55 VOCs index [1..500] 
-  float NOx; // SEN55 NOx index [1..500]
+  float Tsen;  // SEN55 temperature C
+  float VOCs;  // SEN55 VOCs index [1..500] 
+  float NOx;   // SEN55 NOx index [1..500]
+
   float Vbat;
 } data;
+
 data sensorData; // instantiate a sensor data structure
 
-String header = "DateTime, Tbme, Pbme, RHbme, CO2, Tco2, RHco2, mPm1.0, mPm2.5, mPm4.0, mPm10, RHsen, Tsen, VOCs, NOx, Vbat";
+// the title of the columns
+#define HEADER "DateTime, Tbme, Pbme, RHbme, CO2, Tco2, RHco2, mPm1.0, mPm2.5, mPm4.0, mPm10, cPm0.5, cPm1.0, cPm2.5, cPm4.0, cPm10, cPm tSize, RHsen, Tsen, VOCs, NOx, Vbat, ID (Mac Address), WiFi, WiFi rssi (dBm), WiFi Quality" 
 
 // large Oled display
 Adafruit_SH1107 display = Adafruit_SH1107(64, 128, &Wire);
@@ -80,3 +93,4 @@ static const char provisioningPage[] = R"===(
 )===";
 */
 #endif
+
