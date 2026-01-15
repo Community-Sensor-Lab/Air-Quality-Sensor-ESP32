@@ -15,7 +15,6 @@
 #define SERVER_GOOGLE_SCRIPT  "script.google.com"
 #define SERVER_GOOGLE_USERCONTENT  "script.googleusercontent.com"
 
-
 // google
 const char* test_root_ca = R"string_literal(
 -----BEGIN CERTIFICATE-----
@@ -57,7 +56,6 @@ void initializeClient() {
   client.setCACert(test_root_ca);
 }
 
-
 /*!
 * @brief Makes an http get request and handles the response message by calling handleResponse()
 **/
@@ -88,7 +86,6 @@ void httpGet(String url) {
   delay(200);  // Allow TLS setup
   handleResponse();
 }
-
 
 void doPost(String outstr) {
   Serial.println("Calling httpPost...");
@@ -133,7 +130,6 @@ void doPost(String outstr) {
     handleResponse();
   }
 }
-
 
 /*!
 * @brief Handles response from httpGet() and httPost()
