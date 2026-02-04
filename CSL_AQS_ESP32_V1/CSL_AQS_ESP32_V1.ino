@@ -19,7 +19,7 @@
 void setup() {
 
   Serial.begin(115200);
-  delay(8000);
+  delay(5000);
   Serial.println(__FILE__);
 
   initializeSD();     // initializeSD has to come before initializeOLED or it'll crash
@@ -29,74 +29,83 @@ void setup() {
   //initializeSCD30(25);       // CO2 sensor to 30s more stable (1 min max recommended)
   initializeBME();  // TPRH
   initializeRTC();  // clock
+  //delay(8000);
 
   logfile.println(HEADER);
   logfile.flush();
 
-  initializeEEPROM();
-  provisionInfo.noWifi = false;  // we assume we will have wifi
-  delay(5000);
+  Serial.printf("To force provisioning press button A\n");
+  Serial.printf("To continue without WiFi press button B\n");
+  display.printf("Provisioning: bttn A\n");
+  display.printf("No WiFi: bttn B\n");
+  display.display();
 
-  connectToWiFi();
+  provisioningFromEEPROM(); // get EEPROM info
+  
+  Serial.printf("10s to decide\n");
+  unsigned long ts = millis();
+  while(millis()-ts < WIFI_TIMEOUT && provisionInfo.valid && provisionInfo.WiFiPresent) {
+    delay(500);
+    Serial.print("*");
+  }
+  Serial.println();
 
-  initializeClient();
-  Serial.println("Adding header to google sheet");
-  Serial.println(String(PRE_PAYLOAD_ADD_HEADER HEADER));
+  while(WiFi.status() != WL_CONNECTED && provisionInfo.WiFiPresent) {
+    // get mac address 
+    mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFF), HEX);
 
-  doPost(PRE_PAYLOAD_ADD_HEADER HEADER);
+    if(!provisionInfo.valid) {
+      Serial.println("going to softAPprovision");
+      softAPprovision(); // may change to not valid
+    } 
+    if (provisionInfo.valid) {  // and we have good ssid/pw
+      connectToWiFi();
+    }
+    if(!provisionInfo.WiFiPresent){
+      return;
+    }
+  }
 
-  Serial.println("\nDone adding header to google sheet");
-
-  delay(5000);
+  if(!provisionInfo.WiFiPresent)
+    Serial.println("No WiFi present. Continuing without WiFi.");
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    initializeClient();
+    Serial.println("*** Adding header to google sheet. ");
+    doPost(PRE_PAYLOAD_ADD_HEADER HEADER);
+    Serial.println("\n*** Done adding header to google sheet");
+    delay(5000);
+  }
 }
 
 void loop() {
 
   String bme = readBME();
-  delay(300);
-
   String sen55 = readSEN55();
   String scd41 = readSCD41();
-  String rssi_quality;                    //intializes wifi quality variable
-  DateTime now = rtc.now();               // fetch the date + time
-  String mac_ssid = mac_address();        //mac address of sensor
-  String wifi_ssid = provisionInfo.ssid;  //wifi variable used in the sheet
+  DateTime now = rtc.now();     // fetch the date + time
+  
+  String rssi_quality;          //intializes wifi quality variable
+  int wifi_rssi = WiFi.RSSI();  //variable for the rssi strength
 
-  //determines quality of wifi speed
-  int wifi_rssi = WiFi.RSSI();            //variable for the rssi strength
-  if (wifi_rssi > -50) {
-    rssi_quality = "Excellent";
-  } else if (wifi_rssi > -60) {
-    rssi_quality = "Good";
-  } else if (wifi_rssi > -70) {
-    rssi_quality = "Fair";
-  } else { 
-    rssi_quality = "Poor";
-  }
+  if (wifi_rssi > -50) rssi_quality = "Excellent"; 
+  else if (wifi_rssi > -60) rssi_quality = "Good"; 
+  else if (wifi_rssi > -70) rssi_quality = "Fair"; 
+  else rssi_quality = "Poor";
 
   pinMode(VBATPIN, INPUT);  // read battery voltage
   sensorData.Vbat = float(analogReadMilliVolts(VBATPIN) * 2.0 / 1000.00);
   pinMode(BUTTON_A, INPUT_PULLUP);
 
   char tstring[128];
-  sprintf(tstring, "%02u/%02u/%02u %02u:%02u:%02u, ",
-          now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
+  sprintf(tstring, "%02u/%02u/%02u %02u:%02u:%02u, ", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
 
-  String tempString = String(tstring) + bme + scd41 + sen55 + String(sensorData.Vbat) + "," + mac_ssid + "," + wifi_ssid + "," + wifi_rssi + "," + rssi_quality;  //adds all the clumns values
+  String outString = String(tstring) + bme + scd41 + sen55 + String(sensorData.Vbat) + "," + mac_ssid + "," + String(provisionInfo.ssid) + "," + wifi_rssi + "," + rssi_quality;  //adds all the clumns values
 
   Serial.println(HEADER);
-  Serial.println(tempString);
+  Serial.println(outString);
 
-  // if button B pressed then continue without wifi
-  if (provisionInfo.noWifi) {
-    Serial.println("No WiFi connection");
-    display.println("No WiFi mode");
-    display.display();
-  } else {
-    doPost(PRE_PAYLOAD_APPEND_ROW + tempString);
-  }
-
-  logfile.println(tempString);
+  logfile.println(outString);
   logfile.flush();
 
   display.clearDisplay();
@@ -106,10 +115,18 @@ void loop() {
   display.printf("Bat: %.2f V\n", sensorData.Vbat);
   display.display();
 
-  // If button A pressed re-provision wifi creds
-  if (!provisionInfo.valid) {
+  if(WiFi.status() == WL_CONNECTED) {
+    doPost(PRE_PAYLOAD_APPEND_ROW + outString);
+  }
+  if (!provisionInfo.valid && provisionInfo.WiFiPresent) {
     softAPprovision();
     connectToWiFi();
   }
+  if (!provisionInfo.WiFiPresent) {
+    Serial.println("No WiFi");
+    display.println("No WiFi");
+    display.display();
+  } 
+  
   delay(60000);  // 1 minute
 }

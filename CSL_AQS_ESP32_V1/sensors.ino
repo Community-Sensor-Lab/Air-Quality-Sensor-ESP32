@@ -14,8 +14,7 @@ SCD4x CO2sensor(SCD4x_SENSOR_SCD41);
 /* BME280 TEMP, PRESS, RH BOARD FROM ADAFRUIT USING 'Adafruit_BME280.h' */
 
 void initializeBME() {
-
-  Serial.print("Starting BME280 Temp Press RH sensor ... ");
+  Serial.print("Starting BME280 TPRH...\t\t");
   // You can also pass in a Wire library object like &Wire2
   // bmeStatus = bme.begin(0x76, &Wire2)
   if (!bme.begin()) {
@@ -41,7 +40,7 @@ String readBME() {
 /* SCD41 CO2 SENSOR FROM SENSIRION USING "SparkFun_SCD4x_Arduino_Library.h"*/
 
 void initializeSCD41() {
-  Serial.print("Starting SCD41 CO2 sensor ... ");
+  Serial.print("Starting SCD41 CO2...\t\t");
   //mySensor.enableDebugging(); // Uncomment this line to get helpful debug messages on Serial
   if (CO2sensor.begin(false, false, false) == false)  // measBegin, autoCal, skipStopPeriodicMeasurements i.e. Do not start periodic measurements
   {
@@ -82,8 +81,7 @@ String readSCD41() {
 #endif
 
 void initializeSEN55() {
-  Serial.print("Starting SEN55 PM VOC NOX sensor ... ");
-
+  Serial.print("Starting SEN55 PM2.5...\t\t");
   Wire.begin();
   SEN55.begin(Wire);
 
@@ -103,7 +101,7 @@ void initializeSEN55() {
     errorToString(error, errorMessage, 256);
     Serial.println(errorMessage);
   } else {
-    Serial.printf("Temp Offset set to %f C... ", tempOffset);
+    //Serial.printf("T offset %.2f C...\t", tempOffset);
   }
   error = SEN55.startMeasurement();
   if (error) {

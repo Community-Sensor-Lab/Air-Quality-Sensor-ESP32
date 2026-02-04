@@ -58,7 +58,7 @@ void doPost(String outstr) {
   String payload = outstr + POST_PAYLOAD;
   Serial.println(payload);
 
-  Serial.print("\n\nStarting connection to server... ");
+  Serial.print("\nStarting connection to server... ");
   if (!client.connect(SERVER, 443))
     Serial.println("Connection failed");
   else {

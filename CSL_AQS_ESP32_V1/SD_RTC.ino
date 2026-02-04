@@ -13,7 +13,7 @@ void initializeSD() {
       return;
     }
 
-    Serial.print("Starting SD card... ");
+    Serial.print("Starting SD card...\t\t");
 
     char filename[] = "/LOG0000.TXT";  // create a new file//increase 0000
     for (uint16_t i = 0; i <= 9999; i++) {
@@ -29,8 +29,9 @@ void initializeSD() {
     if (!logfile) {
       Serial.println("Couldn't create file");
     } else {
-      Serial.print("Logging to file: ");
-      Serial.println(filename);
+      Serial.printf("Logging to file: %s\n",filename);
+      // Serial.println(filename);
+      // Serial.println();
       delay(200);
       // display.print("logging to file: ");
       // display.println(filename);
@@ -43,7 +44,7 @@ void initializeSD() {
 /* INITIALIZE RTC */
 void initializeRTC() {
 
-  Serial.print("Starting RTC ... ");
+  Serial.print("Starting RTC...\t\t\t");
   Wire.begin();  // connect to RTC
   if (!rtc.begin()) {
     Serial.println("RTC failed");
@@ -57,12 +58,9 @@ void initializeRTC() {
 
     char tstring[128];
     sprintf(tstring, "%02u/%02u/%02u %02u:%02u:%02u", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println("Current Date and Time\n");
+    Serial.printf("Date time...\t\t\t%s\n",tstring);
     display.println(tstring);
     display.display();
-    delay(7000);
   }
    //TO SET TIME at compile : run once to syncro then run again with line commented out
    //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));

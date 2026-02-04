@@ -6,6 +6,7 @@
 #include <FS.h>
 #include <Wire.h>
 #include <WiFi.h>
+#include <WebServer.h>
 #include <RTClib.h>
 // #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>  // OLED library
@@ -13,6 +14,7 @@
 #define VBATPIN A13  // this is also D9 button A disable pullup to read analog
 #define BUTTON_A 15  // for the adafruit Feather ESP32 v2 (ABC, 15 32 14) Oled button also A7 enable pullup to read button
 #define BUTTON_B 32  // for the adafruit Feather ESP32 v2 (ABC, 15 32 14) Oled button also A7 enable pullup to read button
+#define WIFI_TIMEOUT 10000 // how long to wait for connection in ms
 //#define SD_CS 10    // Chip select for SD card default for Adalogger
 
 /* STRUCT TO STORE ALL SENSOR DATA */
@@ -48,6 +50,10 @@ typedef struct {
 
 data sensorData; // instantiate a sensor data structure
 
+// global web server
+static WebServer server(80);
+static String mac_ssid;
+
 // the title of the columns
 #define HEADER "DateTime, Tbme, Pbme, RHbme, CO2, Tco2, RHco2, mPm1.0, mPm2.5, mPm4.0, mPm10, cPm0.5, cPm1.0, cPm2.5, cPm4.0, cPm10, cPm tSize, RHsen, Tsen, VOCs, NOx, Vbat, ID (Mac Address), WiFi, WiFi rssi (dBm), WiFi Quality" 
 
@@ -59,13 +65,37 @@ RTC_PCF8523 rtc;                                                 // Real Time Cl
 File logfile;                                                    // the logging file
 
 // wifi and google sheets provisioning 
-typedef struct {
-  boolean valid;
-  char ssid[64];
-  char passcode[64];
-  char gsid[128];
-  boolean noWifi;
-} Secrets;
+// typedef struct {
+//   boolean valid;
+//   char ssid[64];
+//   char passcode[64];
+//   char gsid[128];
+//   boolean WiFiPresent;
+// } Secrets;
+// Secrets provisionInfo;
+
+struct Secrets {
+  bool  valid;
+  char  ssid[64];
+  char  passcode[64];
+  char  gsid[128];
+  bool  WiFiPresent;
+};
+
+// A versioned, checksummed record stored in EEPROM.
+struct SecretsRecord {
+  uint32_t magic;      // constant marker
+  uint16_t version;    // increment when struct layout changes
+  uint16_t length;     // sizeof(Secrets) at time of write
+  uint32_t crc32;      // CRC of payload only
+  Secrets  payload;
+};
+
+// constants
+static constexpr uint32_t SECRETS_MAGIC   = 0x53454352; // 'SECR'
+static constexpr uint16_t SECRETS_VERSION = 1;
+static constexpr int      EEPROM_ADDR     = 0;
+
 Secrets provisionInfo;
 
 #define PRE_PAYLOAD_APPEND_ROW "{\"command\":\"appendRow\",\"sheet_name\":\"Sheet1\",\"values\":\""
