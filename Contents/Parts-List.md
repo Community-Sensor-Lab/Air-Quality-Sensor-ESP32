@@ -23,11 +23,11 @@
 | 5 Pin Headers | <img src="image-31.png" alt="5 Pin Headers"> | For the SCD41 CO<sub>2</sub> sensor | [DigiKey](https://www.digikey.com/en/products/detail/sullins-connector-solutions/PPTC051LFBN-RC/807239) |
 | 6 Pin Headers | <img src="image-32.1.png" alt="6 Pin Headers"> | For the Particulate Matter Sensor | [DigiKey](https://www.digikey.com/en/products/detail/würth-elektronik/61300611821/16608482) |
 | 7 Pin Headers | <img src="image-33.1.png" alt="7 Pin Headers"> | 7 Pin Header for BME280 and SCD30 | [DigiKey](https://www.digikey.com/en/products/detail/sullins-connector-solutions/PPTC071LFBN-RC/810146) |
-| 12 Pin Headers | <img src="image-34.png" alt="12 Pin Headers"> | 12 Pin Header for Feather Logger and M0 | [DigiKey](https://www.digikey.com/en/products/detail/sullins-connector-solutions/PPTC121LFBN-RC/807231) |
-| 16 Pin Headers | <img src="image-35.png" alt="16 Pin Headers"> | 16 Pin Header for Feather Logger and M0 | [DigiKey](https://www.digikey.com/en/products/detail/sullins-connector-solutions/PPTC161LFBN-RC/810154) |
-| Feather Stacking Header Set | <img src="image-36.png" alt="Feather Stacking Header Set"> | Stacking header for Feather M0 | [Adafruit Store](https://www.adafruit.com/product/2830) |
-| Grove Female Header - DIP-4P-2.0mm | <img src="image-37.png" alt="Grove Female Header"> | i2c Grove Connector | [Seeed Studio](https://www.seeedstudio.com/Grove-Universal-4-pin-connector.html) |
-| CSL_AQS_V1 PCB Board (KiCAD) | <img src="../Contents/image-38.png" alt="CSL_AQS_V1 PCB Board"> | PCB Board | [PCBWay](https://www.pcbway.com/) / [GitHub](https://github.com/Community-Sensor-Lab/Air-Quality-Sensor/tree/CSL_AQS_V5) |
+| 12 Pin Headers | <img src="image-34.1.png" alt="12 Pin Headers"> | For the Feather boards | [DigiKey](https://www.digikey.com/en/products/detail/sullins-connector-solutions/PPTC121LFBN-RC/807231) |
+| 16 Pin Headers | <img src="image-35.1.png" alt="16 Pin Headers"> | For Feather boards | [DigiKey](https://www.digikey.com/en/products/detail/sullins-connector-solutions/PPTC161LFBN-RC/810154) |
+| Feather Stacking Headers Set | <img src="image-36.1.png" alt="Feather Stacking Header Set"> | Stacking headers for Feather ESP32 V2 | [Adafruit](https://www.adafruit.com/product/2830) |
+| Grove Female Header DIP-4P-2.0mm<br>(optional) | <img src="image-37.1.png" alt="Grove Female Header"> | i2c Grove Connector | [Seeed Studio](https://www.seeedstudio.com/Grove-Universal-4-pin-connector.html) |
+| Custom PCB CSL<br>(Gerber files [here]( ../E_CAD  )) | <img src="../Contents/image-38.png" alt="CSL_AQS_V1 PCB Board"> | PCB Board | [PCBWay](https://www.pcbway.com/) / [GitHub](https://github.com/Community-Sensor-Lab/Air-Quality-Sensor/tree/CSL_AQS_V5) |
 | PVC Tube | <img src="image-39.png" alt="PVC Tube"> | PVC 3 Inch Diameter 7 Inch LengthTube | [Home Depot](https://www.homedepot.com/p/Charlotte-Pipe-3-in-x-2-ft-PVC-DWV-Sch-40-Pipe-PVC073000200HA/100533056) |
 | PVC Cap | <img src="image-40.png" alt="PVC Cap"> | PVC Cap 3 Inch Diameter | [Home Depot](https://www.homedepot.com/p/3-in-PVC-DWV-Cap-PVC001161000HD/203393254) |
 | Type C Cable | <img src="image-41.png" alt="Type C Cable"> | Micro USB Cable | [Amazon](https://www.amazon.com/Ruaeoda-Micro-Android-Charger-Gold-Plated/dp/B0D7RZJSPS/ref=sr_1_10?s=industrial&sr=1-10) |
