@@ -16,11 +16,14 @@
 */
 #include "CSL_AQS_ESP32_V1.h"
 
+int currPeriod = 60000; // 2 Seconds default 
+
 void setup() {
 
   Serial.begin(115200);
-  delay(5000);
-  Serial.println(__FILE__);
+  while (!Serial) {
+    ;  // Wait for serial port to connect
+  }
 
   initializeSD();     // initializeSD has to come before initializeOLED or it'll crash
   initializeOLED();   // display
@@ -30,6 +33,7 @@ void setup() {
   initializeBME();  // TPRH
   initializeRTC();  // clock
   //delay(8000);
+  
 
   logfile.println(HEADER);
   logfile.flush();
@@ -128,5 +132,5 @@ void loop() {
     display.display();
   } 
   
-  delay(60000);  // 1 minute
+  delay(currPeriod); 
 }

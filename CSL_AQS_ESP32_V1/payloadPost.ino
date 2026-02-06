@@ -4,6 +4,7 @@
   Suporting the following chipersuites:
 */
 //#include <WiFi.h>
+#include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include "CSL_AQS_ESP32_V1.h"
 
@@ -47,43 +48,46 @@ bP6MvPJwNQzcmRk13NfIRmPVNnGuV/u3gm3c
 -----END CERTIFICATE-----
 )string_literal";
 
-WiFiClientSecure client;
+WiFiClientSecure secureClient;
+HTTPClient client;
 
 void initializeClient() {
-  client.setCACert(test_root_ca);
+  secureClient.setCACert(test_root_ca);
 }
 
 void doPost(String outstr) {
+  unsigned long timeout = millis(); // optional
 
+  // --- New Logic 
   String payload = outstr + POST_PAYLOAD;
-  Serial.println(payload);
+  // --- First POST to Apps Script ---
+  String endpoint = String(SERVER) + "/macros/s/" + String(provisionInfo.gsid) + "/exec?";
+  client.begin(secureClient, endpoint);
+  client.addHeader("Content-Type","application/x-www-form-urlencoded");
+  int code = client.POST(payload);
+  String response = client.getString();
+  Serial.println("POST response code: " + String(code));
+  Serial.println("POST response: " + response);
 
-  Serial.print("\nStarting connection to server... ");
-  if (!client.connect(SERVER, 443))
-    Serial.println("Connection failed");
-  else {
-    Serial.println("Connected to server");
-    // Make a HTTP request:
-    // client.println("POST /macros/s/AKfycbxwxxCaHA24OhuHJWrZQ79a6qOfYCm4-fPbDFGRt9JSZEGv345UuFR-kJw6Sgv7wZq3Qw/exec? HTTP/1.0");//value=Hello HTTP/1.0");
-    client.println("POST /macros/s/" + String(provisionInfo.gsid) + "/exec? HTTP/1.0");  //value=Hello HTTP/1.0");
-    client.println("Host: " SERVER);
-    client.println("Content-Type: application/x-www-form-urlencoded");
-    //client.println("Connection: close");
-    client.print("Content-Length: ");
-    client.println(payload.length());
-    client.println();
-    //Serial.println(String(PRE_PAYLOAD) + String(payload) + String(POST_PAYLOAD));
-    client.print(payload);
-    client.println();
-    delay(200);
-    Serial.println("\nResponse from client: ");
+  // --- Check for redirect ---
+  if (code == 302 || code == 301) {
+    String redirectURL = client.getLocation();
+    Serial.println("Redirecting to: " + redirectURL);
 
-    while (client.connected()) {
-      while (client.available()) {
-        char c = client.read();
-        Serial.write(c);
-      }
-    }
-    client.stop();
+    client.end(); // close old connection
+
+    // --- Open new connection to redirected URL ---
+    client.begin(secureClient, redirectURL);
+    code = client.GET();
+    response = client.getString();
+    Serial.println("GET response code: " + String(code));
+    Serial.println("GET response: " + response);
+    currPeriod = response.toInt();
   }
+
+  client.end(); // close final connection
+
+  // -- END OFF New Logic 
+  double periodLength = millis() - timeout; // optional
+  Serial.println("time it takes post to execute: " +  String((periodLength)/1000) +  " Seconds" ); // optional
 }
