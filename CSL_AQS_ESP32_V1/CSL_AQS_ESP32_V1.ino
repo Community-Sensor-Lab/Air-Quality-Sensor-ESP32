@@ -66,9 +66,11 @@ void setup() {
     }
   }
 
-  if(!provisionInfo.WiFiPresent)
+  if(!provisionInfo.WiFiPresent) {
     Serial.println("No WiFi present. Continuing without WiFi.");
-  
+    display.printf("No WiFi\n");
+    display.display();
+  }
   if (WiFi.status() == WL_CONNECTED) {
     initializeClient();
     Serial.println("*** Adding header to google sheet. ");

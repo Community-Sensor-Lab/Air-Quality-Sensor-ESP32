@@ -78,7 +78,7 @@ String buildProvisioningPage() {
 void handleRoot() {
   // If you want faster page load, you can avoid scanning every time and cache results.
   Serial.println("handleRoot");
-  
+
   String page = buildProvisioningPage();
   server.send(200, "text/html", page);
 }
@@ -147,8 +147,7 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
         info.wifi_ap_staconnected.mac[3],
         info.wifi_ap_staconnected.mac[4],
         info.wifi_ap_staconnected.mac[5],
-        info.wifi_ap_staconnected.aid
-      );
+        info.wifi_ap_staconnected.aid);
       break;
 
     case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
@@ -160,8 +159,7 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
         info.wifi_ap_stadisconnected.mac[3],
         info.wifi_ap_stadisconnected.mac[4],
         info.wifi_ap_stadisconnected.mac[5],
-        info.wifi_ap_stadisconnected.aid
-      );
+        info.wifi_ap_stadisconnected.aid);
       break;
 
     default:
@@ -179,15 +177,19 @@ void softAPprovision() {
   //mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFF), HEX);
 
   WiFi.softAPConfig(AP_IP, AP_GW, AP_MASK);
-  WiFi.onEvent(onWiFiEvent); // 
+  WiFi.onEvent(onWiFiEvent);  //
+  display.clearDisplay();
+  display.setCursor(0, 0);
 
   if (!WiFi.softAP(mac_ssid.c_str())) {
     Serial.println("❌ softAP start failed");
-  } 
-  else {
-    Serial.printf("✅ Started Provisioning Wifi: %s\n",mac_ssid);
+    display.printf("SoftAP start failed\n");
+  } else {
+    Serial.printf("✅ Started Provisioning Wifi: %s\n", mac_ssid);
+    display.printf("Started Provisioning Wifi:%s\n", mac_ssid);
   }
-
+  display.display();
+  
   // Web routes
   server.on("/", HTTP_GET, handleRoot);
   server.on("/get", HTTP_GET, handleGet);
@@ -195,12 +197,16 @@ void softAPprovision() {
 
   server.begin();
   Serial.println("✅ HTTP server started (port 80)");
-  Serial.printf("Open webpage to %s on device connected to the WiFi\n",WiFi.softAPIP().toString());
+  Serial.printf("Open webpage to %s on device connected to the WiFi\n", WiFi.softAPIP().toString());
+  display.printf("Open webpage at\n%s\n", WiFi.softAPIP().toString());
+  display.display();
 
-  while(!provisionInfo.valid) {
+  while (!provisionInfo.valid) {
     server.handleClient();
-    if(!provisionInfo.WiFiPresent) {
+    if (!provisionInfo.WiFiPresent) {
       Serial.println("Provisioning canceled. Continue without WiFi");
+      display.printf("Canceled. No WiFi");
+      display.display();
       break;
     }
   }
