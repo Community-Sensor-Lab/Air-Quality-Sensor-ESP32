@@ -55,10 +55,13 @@ void initializeClient() {
   secureClient.setCACert(test_root_ca);
 }
 
-void doPost(String outstr) {
-  unsigned long timeout = millis(); // optional
+/***
+Major concerns with this approach is its potential for high energy consumption as we are connecting an disconnecting between two servers. 
+A better approach would be to send once we have made atleast 8 readings, have a large sample rate period, or alternatives such as MQTT. 
+***/
 
-  // --- New Logic 
+void doPost(String outstr) {
+  unsigned long timeout = millis(); // Testing Purposes
   String payload = outstr + POST_PAYLOAD;
   // --- First POST to Apps Script ---
   String endpoint = String(SERVER) + "/macros/s/" + String(provisionInfo.gsid) + "/exec?";
@@ -86,8 +89,6 @@ void doPost(String outstr) {
   }
 
   client.end(); // close final connection
-
-  // -- END OFF New Logic 
-  double periodLength = millis() - timeout; // optional
-  Serial.println("time it takes post to execute: " +  String((periodLength)/1000) +  " Seconds" ); // optional
+  double periodLength = millis() - timeout; //  Testing Purposes
+  Serial.println("time it takes post to execute: " +  String((periodLength)/1000) +  " Seconds" ); // Testing Purposes
 }
