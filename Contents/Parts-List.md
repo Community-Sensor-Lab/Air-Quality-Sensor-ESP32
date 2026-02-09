@@ -18,7 +18,7 @@
 | ---- | ---- | ---- | ---- |
 | MiniBoost 5V | <img src="image-27.1.png" alt="MiniBoost 5V"> | 3.3 to 5 Voltage Converter | [Adafruit](https://www.adafruit.com/product/4654) |
 | Coin Battery CR1220 | <img src="image-28.1.png" alt="Battery Coin cr1220"> | Battery for RTC| [Adafruit](https://www.adafruit.com/product/380) |
-| Micro SD | <img src="image-29.png" alt="Micro SD"> | Permanent Data Storage on the Device | [DigiKey](https://www.digikey.com/en/products/detail/delkin-devices-inc/USDCOEM-16GB/13882332) |
+| Micro SD<br>4GB min | <img src="image-29.png" alt="Micro SD"> | Permanent Data Storage on the Device | [DigiKey](https://www.digikey.com/en/products/detail/delkin-devices-inc/USDCOEM-16GB/13882332) |
 | 4 Pin Headers | <img src="image-30.1.png" alt="4 Pin Headers"> | For MiniBoost 3.3 to 5 Volt. Converter | [DigiKey](https://www.digikey.com/en/products/detail/sullins-connector-solutions/PPTC041LFBN-RC/810144) |
 | 5 Pin Headers | <img src="image-31.png" alt="5 Pin Headers"> | For the SCD41 CO<sub>2</sub> sensor | [DigiKey](https://www.digikey.com/en/products/detail/sullins-connector-solutions/PPTC051LFBN-RC/807239) |
 | 6 Pin Headers | <img src="image-32.1.png" alt="6 Pin Headers"> | For the Particulate Matter Sensor | [DigiKey](https://www.digikey.com/en/products/detail/würth-elektronik/61300611821/16608482) |
