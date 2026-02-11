@@ -27,7 +27,7 @@
 | 16 Pin Headers | <img src="images/image-35.1.png" alt="16 Pin Headers"> | For Feather boards | [DigiKey](https://www.digikey.com/en/products/detail/sullins-connector-solutions/PPTC161LFBN-RC/810154) |
 | Feather Stacking Headers Set | <img src="images/image-36.1.png" alt="Feather Stacking Header Set"> | Stacking headers for Feather ESP32 V2 | [Adafruit](https://www.adafruit.com/product/2830) |
 | Grove Female Header DIP-4P-2.0mm<br>(optional) | <img src="images/image-37.1.png" alt="Grove Female Header"> | i2c Grove Connector | [Seeed Studio](https://www.seeedstudio.com/Grove-Universal-4-pin-connector.html) |
-| Custom PCB CSL<br>(Gerber files [here]( ../E_CAD  )) | <img src="../Contents/image-38.1.png" alt="CSL_AQS_V1 PCB Board"> | PCB Board | [PCBWay](https://www.pcbway.com/) |
+| Custom PCB CSL<br>(Gerber files [here]( ../E_CAD  )) | <img src="images/image-38.1.png" alt="CSL_AQS_V1 PCB Board"> | PCB Board | [PCBWay](https://www.pcbway.com/) |
 | PVC Tube<br>Charlotte type is best | <img src="images/image-39.1.png" alt="PVC Tube"> | 3" ID, 7" Length Tube | [Home Depot](https://www.homedepot.com/p/Charlotte-Pipe-3-in-x-2-ft-PVC-DWV-Sch-40-Pipe-PVC073000200HA/100533056) |
 | PVC Cap | <img src="images/image-40.1.png" alt="PVC Cap"> | PVC Cap 3 Inch Diameter | [Home Depot](https://www.homedepot.com/p/3-in-PVC-DWV-Cap-PVC001161000HD/203393254) |
 | Type C Cable | <img src="images/image-41.png" alt="Type C Cable"> | Micro USB Cable | [Amazon](https://www.amazon.com/Ruaeoda-Micro-Android-Charger-Gold-Plated/dp/B0D7RZJSPS/ref=sr_1_10?s=industrial&sr=1-10) |
