@@ -21,9 +21,8 @@ int currPeriod = 60000; // 2 Seconds default
 void setup() {
 
   Serial.begin(115200);
-  while (!Serial) {
-    ;  // Wait for serial port to connect
-  }
+  delay(5000);
+  Serial.println(__FILE__);
 
   initializeSD();     // initializeSD has to come before initializeOLED or it'll crash
   initializeOLED();   // display
