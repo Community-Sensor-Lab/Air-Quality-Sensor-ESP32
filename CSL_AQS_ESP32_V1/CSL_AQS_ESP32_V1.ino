@@ -64,7 +64,7 @@ void setup() {
 
   // Go for provisioning. ENTER HERE IF TIMED OUT OR PROVISION NOT VALID OR A PRESSED OR B PRESSED
   while (!provisionInfo.valid && provisionInfo.WiFiPresent) {  // ENTER IF A PRESSED OR PROVISION NOT VALID
-    mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFF), HEX);
+    mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() >> 24) & 0xFFFFFF, HEX);
     Serial.println("going to softAPprovision");
     softAPprovision();  // may change to not valid
     if (provisionInfo.valid && provisionInfo.WiFiPresent) {
