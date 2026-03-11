@@ -1,6 +1,6 @@
 <div align="center">
 
-![Banner](images/csl_banner.png)
+![Banner](images/csl_banner.1.png)
 
 </div>
 
@@ -25,8 +25,8 @@
 ##  What You'll Build
 
 <p align="center">
-  <img src="images/Lab_hero_sticker.png" width="49%"/>
-  <img src="images/CSL_AQS_solar2_Sticker.png" width="49%"/>
+  <img src="images/Lab_hero_sticker.1.png" width="49%"/>
+  <img src="images/CSL_AQS_solar2_Sticker.1.png" width="49%"/>
 </p>
 
 > **A complete air quality monitoring system** that measures Temperature, Relative Humidity, CO<sub>2</sub>, Volatiles (VOCs), Nitrogen Oxides (NOx), and particulate matter PM.

@@ -135,6 +135,7 @@ void handleNotFound() {
   server.send(404, "text/plain", "Not found");
 }
 
+// This will report when someone joins the hotspot. It is asynchronous
 void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
   switch (event) {
 
@@ -148,6 +149,9 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
         info.wifi_ap_staconnected.mac[4],
         info.wifi_ap_staconnected.mac[5],
         info.wifi_ap_staconnected.aid);
+
+        display.printf("Open web at\n%s\n", WiFi.softAPIP().toString());
+        display.display();
       break;
 
     case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
@@ -160,7 +164,6 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
         info.wifi_ap_stadisconnected.mac[4],
         info.wifi_ap_stadisconnected.mac[5],
         info.wifi_ap_stadisconnected.aid);
-      break;
 
     default:
       break;
@@ -172,6 +175,7 @@ void softAPprovision() {
   static const IPAddress AP_GW(192, 168, 4, 1);
   static const IPAddress AP_MASK(255, 255, 255, 0);
   // Allow scanning while also running SoftAP
+  WiFi.disconnect();
   WiFi.mode(WIFI_AP_STA);
 
   //mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFF), HEX);
@@ -186,10 +190,10 @@ void softAPprovision() {
     display.printf("SoftAP start failed\n");
   } else {
     Serial.printf("✅ Started Provisioning Wifi: %s\n", mac_ssid);
-    display.printf("Started Provisioning Wifi:%s\n", mac_ssid);
+    display.printf("Provisioning\nJoin WiFi:%s\n", mac_ssid);
   }
   display.display();
-  
+
   // Web routes
   server.on("/", HTTP_GET, handleRoot);
   server.on("/get", HTTP_GET, handleGet);
@@ -198,8 +202,8 @@ void softAPprovision() {
   server.begin();
   Serial.println("✅ HTTP server started (port 80)");
   Serial.printf("Open webpage to %s on device connected to the WiFi\n", WiFi.softAPIP().toString());
-  display.printf("Open webpage at\n%s\n", WiFi.softAPIP().toString());
-  display.display();
+  // display.printf("Open webpage at\n%s\n", WiFi.softAPIP().toString());
+  // display.display();
 
   while (!provisionInfo.valid) {
     server.handleClient();
@@ -215,9 +219,9 @@ void softAPprovision() {
   WiFi.softAPdisconnect(true);
 }
 
-void connectToWiFi() {
+bool connectToWiFi() {
 
-  delay(1000);
+  //delay(1000);
   Serial.printf("\nWill try to connect to WiFi: %s\n", provisionInfo.ssid);
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -234,7 +238,7 @@ void connectToWiFi() {
     Serial.print(".");
     delay(100);
     if ((millis() - st) > WIFI_TIMEOUT) {
-      Serial.println("wifi connect timeout");
+      Serial.println("\nWiFi connect timeout. Going back to provisioning.");
       provisionInfo.valid = false;
       break;
     }
@@ -243,7 +247,11 @@ void connectToWiFi() {
   if (WiFi.status() == WL_CONNECTED) {
     delay(1000);
     Serial.printf("\nConnected to WiFi: %s\n", provisionInfo.ssid);
-    display.printf("\nConnected to WiFi: \n\n%s", provisionInfo.ssid);
+    display.printf("\nConnected to WiFi:\n%s", provisionInfo.ssid);
     display.display();
+    return true;
+  } else {
+    Serial.printf("Not Connected to WiFi: %s\n", provisionInfo.ssid);
+    return false;
   }
 }
