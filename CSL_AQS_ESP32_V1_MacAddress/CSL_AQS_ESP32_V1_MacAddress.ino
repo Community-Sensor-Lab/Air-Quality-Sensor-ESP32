@@ -40,33 +40,37 @@ void setup() {
   display.printf("No WiFi: bttn B\n");
   display.display();
 
-  provisioningFromEEPROM(); // get EEPROM info
-  
+  provisioningFromEEPROM();  // get EEPROM info
+
   Serial.printf("10s to decide\n");
   unsigned long ts = millis();
-  while(millis()-ts < WIFI_TIMEOUT && provisionInfo.valid && provisionInfo.WiFiPresent) {
-    delay(500);
-    Serial.print("*");
+
+  if (provisionInfo.valid) {  // ENTER IF PROVISION VALID, EXIT IF EITHER A OR B PRESSED OR TIMEOUT. IF EEPROM READ IS INVALID SKIPS
+    int i = 10;
+
+    while (millis() - ts < WIFI_TIMEOUT && provisionInfo.valid && provisionInfo.WiFiPresent) {
+      Serial.printf("%d ", i--);
+      delay(1000);
+    }
+    Serial.println();
   }
-  Serial.println();
 
-  while(WiFi.status() != WL_CONNECTED && provisionInfo.WiFiPresent) {
-    // get mac address 
-    mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFF), HEX);
+  // If we have a valid provision and wifi, try it out
+  if (provisionInfo.valid && provisionInfo.WiFiPresent) {
+    connectToWiFi();
+  }
 
-    if(!provisionInfo.valid) {
-      Serial.println("going to softAPprovision");
-      softAPprovision(); // may change to not valid
-    } 
-    if (provisionInfo.valid) {  // and we have good ssid/pw
+  // Go for provisioning. ENTER HERE IF TIMED OUT OR PROVISION NOT VALID OR A PRESSED OR B PRESSED
+  while (!provisionInfo.valid && provisionInfo.WiFiPresent) {  // ENTER IF A PRESSED OR PROVISION NOT VALID
+    mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() >> 24) & 0xFFFFFF, HEX);
+    Serial.println("going to softAPprovision");
+    softAPprovision();  // may change to not valid
+    if (provisionInfo.valid && provisionInfo.WiFiPresent) {
       connectToWiFi();
     }
-    if(!provisionInfo.WiFiPresent){
-      return;
-    }
   }
 
-  if(!provisionInfo.WiFiPresent) {
+  if (!provisionInfo.WiFiPresent) {
     Serial.println("No WiFi present. Continuing without WiFi.");
     display.printf("No WiFi\n");
     display.display();
@@ -85,14 +89,14 @@ void loop() {
   String bme = readBME();
   String sen55 = readSEN55();
   String scd41 = readSCD41();
-  DateTime now = rtc.now();     // fetch the date + time
-  
+  DateTime now = rtc.now();  // fetch the date + time
+
   String rssi_quality;          //intializes wifi quality variable
   int wifi_rssi = WiFi.RSSI();  //variable for the rssi strength
 
-  if (wifi_rssi > -50) rssi_quality = "Excellent"; 
-  else if (wifi_rssi > -60) rssi_quality = "Good"; 
-  else if (wifi_rssi > -70) rssi_quality = "Fair"; 
+  if (wifi_rssi > -50) rssi_quality = "Excellent";
+  else if (wifi_rssi > -60) rssi_quality = "Good";
+  else if (wifi_rssi > -70) rssi_quality = "Fair";
   else rssi_quality = "Poor";
 
   pinMode(VBATPIN, INPUT);  // read battery voltage
@@ -117,7 +121,7 @@ void loop() {
   display.printf("Bat: %.2f V\n", sensorData.Vbat);
   display.display();
 
-  if(WiFi.status() == WL_CONNECTED) {
+  if (WiFi.status() == WL_CONNECTED) {
     doPost(PRE_PAYLOAD_APPEND_ROW + outString);
   }
   if (!provisionInfo.valid && provisionInfo.WiFiPresent) {
@@ -128,7 +132,7 @@ void loop() {
     Serial.println("No WiFi");
     display.println("No WiFi");
     display.display();
-  } 
-  
+  }
+
   delay(60000);  // 1 minute
 }
