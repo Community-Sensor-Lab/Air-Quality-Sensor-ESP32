@@ -57,9 +57,8 @@ void provisioningFromEEPROM() {
 
   if (!loadProvisioningInfoFromEEPROM(provisionInfo)) {
     Serial.println("No valid ProvisioningInfo in EEPROM");
-    memset(&provisionInfo, 0, sizeof(provisionInfo));
     provisionInfo.valid = false;
-    //provisionInfo.WiFiPresent = false;
+    provisionInfo.WiFiPresent = true;
 
   } else {
     Serial.println("Loaded ProvisioningInfo from EEPROM.");

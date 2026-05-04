@@ -135,7 +135,6 @@ void handleNotFound() {
   server.send(404, "text/plain", "Not found");
 }
 
-// This will report when someone joins the hotspot. It is asynchronous
 void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
   switch (event) {
 
@@ -149,9 +148,6 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
         info.wifi_ap_staconnected.mac[4],
         info.wifi_ap_staconnected.mac[5],
         info.wifi_ap_staconnected.aid);
-
-        display.printf("Open web at\n%s\n", WiFi.softAPIP().toString());
-        display.display();
       break;
 
     case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
@@ -164,10 +160,29 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
         info.wifi_ap_stadisconnected.mac[4],
         info.wifi_ap_stadisconnected.mac[5],
         info.wifi_ap_stadisconnected.aid);
+      break;
 
     default:
       break;
   }
+}
+
+void printMac(const char* label, uint8_t mac[6]) {
+  Serial.printf("%s: %02X:%02X:%02X:%02X:%02X:%02X\n", //Writes in Hex w/ zero padding 
+                label,
+                mac[0], mac[1], mac[2],
+                mac[3], mac[4], mac[5]);
+}
+
+void displayMac(const char* label, uint8_t mac[6]) {
+  char buf[32];
+
+  snprintf(buf, sizeof(buf), //Less chance of buffer overflowing
+           "%02X:%02X:%02X:%02X:%02X:%02X", 
+           mac[0], mac[1], mac[2],
+           mac[3], mac[4], mac[5]);
+
+  display.printf("%s\n%s\n", label, buf);
 }
 
 void softAPprovision() {
@@ -175,7 +190,6 @@ void softAPprovision() {
   static const IPAddress AP_GW(192, 168, 4, 1);
   static const IPAddress AP_MASK(255, 255, 255, 0);
   // Allow scanning while also running SoftAP
-  WiFi.disconnect();
   WiFi.mode(WIFI_AP_STA);
 
   //mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFF), HEX);
@@ -190,7 +204,7 @@ void softAPprovision() {
     display.printf("SoftAP start failed\n");
   } else {
     Serial.printf("✅ Started Provisioning Wifi: %s\n", mac_ssid);
-    display.printf("Provisioning\nJoin WiFi:%s\n", mac_ssid);
+    display.printf("Started Provisioning Wifi:%s\n", mac_ssid);
   }
   display.display();
 
@@ -202,8 +216,32 @@ void softAPprovision() {
   server.begin();
   Serial.println("✅ HTTP server started (port 80)");
   Serial.printf("Open webpage to %s on device connected to the WiFi\n", WiFi.softAPIP().toString());
-  // display.printf("Open webpage at\n%s\n", WiFi.softAPIP().toString());
-  // display.display();
+
+  uint64_t chipid = ESP.getEfuseMac(); // Writes from LSB to MSB and Byte order is LSB to MSB. Results in a backwards Mac Address
+
+  uint8_t baseMac[6]; //MacAddress lies in 48bits Writes MSB to LSB 
+  for (int i = 0; i < 6; i++) { //Shift from most significant to least. This returns the same order which is the wrong order
+    baseMac[i] = (chipid >> (8 * (5 - i))) & 0xFF; //Mask each byte. 
+  }
+
+  printMac("Base MAC (eFuse)", baseMac);
+
+  uint8_t staMac[6];
+  WiFi.macAddress(staMac); //Writes MSB to LSB. Correct Mac Address
+  printMac("STA MAC", staMac);
+
+  uint8_t apMac[6];
+  WiFi.softAPmacAddress(apMac);
+
+  printMac("AP MAC", apMac);
+
+
+  display.printf("Open webpage at\n%s\n", WiFi.softAPIP().toString());
+//  displayMac("Base MAC", baseMac);
+  displayMac("STA MAC", staMac);
+  displayMac("AP MAC", apMac);
+
+  display.display();
 
   while (!provisionInfo.valid) {
     server.handleClient();
@@ -219,9 +257,9 @@ void softAPprovision() {
   WiFi.softAPdisconnect(true);
 }
 
-bool connectToWiFi() {
+void connectToWiFi() {
 
-  //delay(1000);
+  delay(1000);
   Serial.printf("\nWill try to connect to WiFi: %s\n", provisionInfo.ssid);
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -238,7 +276,7 @@ bool connectToWiFi() {
     Serial.print(".");
     delay(100);
     if ((millis() - st) > WIFI_TIMEOUT) {
-      Serial.println("\nWiFi connect timeout. Going back to provisioning.");
+      Serial.println("wifi connect timeout");
       provisionInfo.valid = false;
       break;
     }
@@ -247,11 +285,7 @@ bool connectToWiFi() {
   if (WiFi.status() == WL_CONNECTED) {
     delay(1000);
     Serial.printf("\nConnected to WiFi: %s\n", provisionInfo.ssid);
-    display.printf("\nConnected to WiFi:\n%s", provisionInfo.ssid);
+    display.printf("\nConnected to WiFi: \n\n%s", provisionInfo.ssid);
     display.display();
-    return true;
-  } else {
-    Serial.printf("Not Connected to WiFi: %s\n", provisionInfo.ssid);
-    return false;
   }
 }

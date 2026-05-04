@@ -42,16 +42,14 @@ void setup() {
 
   provisioningFromEEPROM();  // get EEPROM info
 
-  provisionInfo.WiFiPresent = true;
   Serial.printf("10s to decide\n");
-
   unsigned long ts = millis();
- 
-  // Loop for 10 s to go into forced provisioning or no-wifi. If no-valid provision skip
+
   if (provisionInfo.valid) {  // ENTER IF PROVISION VALID, EXIT IF EITHER A OR B PRESSED OR TIMEOUT. IF EEPROM READ IS INVALID SKIPS
     int i = 10;
+
     while (millis() - ts < WIFI_TIMEOUT && provisionInfo.valid && provisionInfo.WiFiPresent) {
-      Serial.printf("%d ",i--);
+      Serial.printf("%d ", i--);
       delay(1000);
     }
     Serial.println();
@@ -71,18 +69,17 @@ void setup() {
       connectToWiFi();
     }
   }
-  // HERE IF B PRESSED (REDUNDANT)
+
   if (!provisionInfo.WiFiPresent) {
     Serial.println("No WiFi present. Continuing without WiFi.");
-    display.printf("\nNo WiFi\n");
+    display.printf("No WiFi\n");
     display.display();
   }
-
   if (WiFi.status() == WL_CONNECTED) {
     initializeClient();
-    Serial.print("*** Adding header to google sheet... \n\n");
+    Serial.println("*** Adding header to google sheet. ");
     doPost(PRE_PAYLOAD_ADD_HEADER HEADER);
-    Serial.println("\n\n*** Done adding header to google sheet.");
+    Serial.println("\n*** Done adding header to google sheet");
     delay(5000);
   }
 }
