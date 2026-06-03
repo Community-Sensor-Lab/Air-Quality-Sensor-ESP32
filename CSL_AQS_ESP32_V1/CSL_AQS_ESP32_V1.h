@@ -53,6 +53,7 @@ data sensorData; // instantiate a sensor data structure
 // global web server
 static WebServer server(80);
 static String mac_ssid;
+String FullmacStr = "";
 
 // the title of the columns
 #define HEADER "DateTime, Tbme, Pbme, RHbme, CO2, Tco2, RHco2, mPm1.0, mPm2.5, mPm4.0, mPm10, cPm0.5, cPm1.0, cPm2.5, cPm4.0, cPm10, cPm tSize, RHsen, Tsen, VOCs, NOx, Vbat, ID (Mac Address), WiFi, WiFi rssi (dBm), WiFi Quality" 

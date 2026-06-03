@@ -12,7 +12,7 @@
    https://github.com/Community-Sensor-Lab/Air-Quality-Sensor
 
    RICARDO TOLEDO-CROW NGENS, ESI, ASRC, CUNY, May 2025
-
+//Mac Address Testing
 */
 #include "CSL_AQS_ESP32_V1.h"
 
@@ -62,7 +62,13 @@ void setup() {
 
   // Go for provisioning. ENTER HERE IF TIMED OUT OR PROVISION NOT VALID OR A PRESSED OR B PRESSED
   while (!provisionInfo.valid && provisionInfo.WiFiPresent) {  // ENTER IF A PRESSED OR PROVISION NOT VALID
-    mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() >> 24) & 0xFFFFFF, HEX);
+
+    uint32_t mac_reversed = (uint32_t)(ESP.getEfuseMac() >> 24) & 0xFFFFFF;
+    uint32_t mac_original = ((mac_reversed & 0xFF) << 16) | ((mac_reversed & 0xFF00)) | ((mac_reversed & 0xFF0000) >> 16); //Shift addresses to correct positions
+
+    mac_ssid = "csl-" + String(mac_original, HEX);
+    // mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() >> 24) & 0xFFFFFF, HEX);
+
     Serial.println("going to softAPprovision");
     softAPprovision();  // may change to not valid
     if (provisionInfo.valid && provisionInfo.WiFiPresent) {
@@ -106,7 +112,7 @@ void loop() {
   char tstring[128];
   sprintf(tstring, "%02u/%02u/%02u %02u:%02u:%02u, ", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
 
-  String outString = String(tstring) + bme + scd41 + sen55 + String(sensorData.Vbat) + "," + mac_ssid + "," + String(provisionInfo.ssid) + "," + wifi_rssi + "," + rssi_quality;  //adds all the clumns values
+  String outString = String(tstring) + bme + scd41 + sen55 + String(sensorData.Vbat) + "," + FullmacStr + "," + String(provisionInfo.ssid) + "," + wifi_rssi + "," + rssi_quality;  //adds all the clumns values
 
   Serial.println(HEADER);
   Serial.println(outString);

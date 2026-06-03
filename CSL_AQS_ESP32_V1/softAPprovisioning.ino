@@ -168,7 +168,7 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
 }
 
 void printMac(const char* label, uint8_t mac[6]) {
-  Serial.printf("%s: %02X:%02X:%02X:%02X:%02X:%02X\n", //Writes in Hex w/ zero padding 
+  Serial.printf("%s: %02X:%02X:%02X:%02X:%02X:%02X\n",  //Writes in Hex w/ zero padding
                 label,
                 mac[0], mac[1], mac[2],
                 mac[3], mac[4], mac[5]);
@@ -177,8 +177,8 @@ void printMac(const char* label, uint8_t mac[6]) {
 void displayMac(const char* label, uint8_t mac[6]) {
   char buf[32];
 
-  snprintf(buf, sizeof(buf), //Less chance of buffer overflowing
-           "%02X:%02X:%02X:%02X:%02X:%02X", 
+  snprintf(buf, sizeof(buf),  //Less chance of buffer overflowing
+           "%02X:%02X:%02X:%02X:%02X:%02X",
            mac[0], mac[1], mac[2],
            mac[3], mac[4], mac[5]);
 
@@ -217,17 +217,17 @@ void softAPprovision() {
   Serial.println("✅ HTTP server started (port 80)");
   Serial.printf("Open webpage to %s on device connected to the WiFi\n", WiFi.softAPIP().toString());
 
-  uint64_t chipid = ESP.getEfuseMac(); // Writes from LSB to MSB and Byte order is LSB to MSB. Results in a backwards Mac Address
+  uint64_t chipid = ESP.getEfuseMac();  // Writes from LSB to MSB and Byte order is LSB to MSB. Results in a backwards Mac Address
 
-  uint8_t baseMac[6]; //MacAddress lies in 48bits Writes MSB to LSB 
-  for (int i = 0; i < 6; i++) { //Shift from most significant to least. This returns the same order which is the wrong order
-    baseMac[i] = (chipid >> (8 * (5 - i))) & 0xFF; //Mask each byte. 
+  uint8_t baseMac[6];                               //MacAddress lies in 48bits Writes MSB to LSB
+  for (int i = 0; i < 6; i++) {                     //Shift from most significant to least. This returns the same order which is the wrong order
+    baseMac[i] = (chipid >> (8 * (5 - i))) & 0xFF;  //Mask each byte.
   }
 
   printMac("Base MAC (eFuse)", baseMac);
 
   uint8_t staMac[6];
-  WiFi.macAddress(staMac); //Writes MSB to LSB. Correct Mac Address
+  WiFi.macAddress(staMac);  //Writes MSB to LSB. Correct Mac Address
   printMac("STA MAC", staMac);
 
   uint8_t apMac[6];
@@ -237,7 +237,7 @@ void softAPprovision() {
 
 
   display.printf("Open webpage at\n%s\n", WiFi.softAPIP().toString());
-//  displayMac("Base MAC", baseMac);
+  //  displayMac("Base MAC", baseMac);
   displayMac("STA MAC", staMac);
   displayMac("AP MAC", apMac);
 
@@ -284,6 +284,18 @@ void connectToWiFi() {
 
   if (WiFi.status() == WL_CONNECTED) {
     delay(1000);
+
+    uint64_t mac = ESP.getEfuseMac();
+    char macBuf[20];
+    sprintf(macBuf, "%02x:%02x:%02x:%02x:%02x:%02x",
+            (uint8_t)(mac)&0xFF,
+            (uint8_t)(mac >> 8) & 0xFF,
+            (uint8_t)(mac >> 16) & 0xFF,
+            (uint8_t)(mac >> 24) & 0xFF,
+            (uint8_t)(mac >> 32) & 0xFF,
+            (uint8_t)(mac >> 40) & 0xFF);
+    FullmacStr = String(macBuf);
+
     Serial.printf("\nConnected to WiFi: %s\n", provisionInfo.ssid);
     display.printf("\nConnected to WiFi: \n\n%s", provisionInfo.ssid);
     display.display();
