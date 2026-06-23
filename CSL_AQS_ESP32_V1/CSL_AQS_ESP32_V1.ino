@@ -82,8 +82,10 @@ void setup() {
     display.display();
   }
   if (WiFi.status() == WL_CONNECTED) {
-    initializeClient();
-    Serial.println("*** Adding header to google sheet. ");
+  syncRTCFromNTP();
+
+  initializeClient();
+  Serial.println("*** Adding header to google sheet. ");
     doPost(PRE_PAYLOAD_ADD_HEADER HEADER);
     Serial.println("\n*** Done adding header to google sheet");
     delay(5000);

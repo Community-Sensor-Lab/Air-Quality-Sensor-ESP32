@@ -64,4 +64,44 @@ void initializeRTC() {
   }
    //TO SET TIME at compile : run once to syncro then run again with line commented out
    //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  
+}
+
+void syncRTCFromNTP() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Skipping RTC sync: WiFi not connected");
+    return;
+  }
+
+  Serial.println("Syncing RTC from NTP...");
+
+  configTime(-5 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo, 10000)) {
+    Serial.println("RTC sync failed: no NTP time received");
+    return;
+  }
+
+  DateTime ntpTime(
+    timeinfo.tm_year + 1900,
+    timeinfo.tm_mon + 1,
+    timeinfo.tm_mday,
+    timeinfo.tm_hour,
+    timeinfo.tm_min,
+    timeinfo.tm_sec
+  );
+
+  DateTime rtcTime = rtc.now();
+
+  int32_t driftSeconds = (int32_t)((int64_t)ntpTime.unixtime() - (int64_t)rtcTime.unixtime());
+
+  Serial.printf("RTC drift: %ld seconds\n", (long)driftSeconds);
+
+  if (driftSeconds > 5 || driftSeconds < -5) {
+    rtc.adjust(ntpTime);
+    Serial.println("RTC adjusted from NTP");
+  } else {
+    Serial.println("RTC already close enough");
+  }
 }
