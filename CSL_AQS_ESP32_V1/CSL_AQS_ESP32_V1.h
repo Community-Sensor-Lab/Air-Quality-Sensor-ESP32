@@ -8,6 +8,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <RTClib.h>
+#include <time.h>
 // #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>  // OLED library
 
@@ -123,5 +124,6 @@ static const char provisioningPage[] = R"===(
 </body></html>
 )===";
 */
+void syncRTCFromNTP();
 #endif
 
