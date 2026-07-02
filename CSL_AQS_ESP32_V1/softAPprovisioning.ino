@@ -3,6 +3,23 @@
 #include <DNSServer.h>
 #include <WebServer.h>
 #include "CSL_AQS_ESP32_V1.h"
+#include "cert.h"
+#include "private_key.h"
+
+#define HTTPS_REQUEST_MAX_HEADERS 30
+#define HTTPS_REQUEST_MAX_REQUEST_LENGTH 1024
+#define HTTPS_REQUEST_MAX_HEADER_LENGTH 2048
+#define HTTPS_CONNECTION_DATA_CHUNK_SIZE 2048
+
+#include <HTTPSServer.hpp>
+#include <SSLCert.hpp>
+#include <HTTPRequest.hpp>
+#include <HTTPResponse.hpp>
+#include <ResourceNode.hpp>
+#include <ResourceParameters.hpp>
+#include <string>
+
+using namespace httpsserver;
 
 /**
 * Starts a wifi access point with a unique name 'csl-xxxx' and starts a server.
@@ -14,6 +31,21 @@
 
 // ----------------------
 // SoftAP config
+static SSLCert httpsCert = SSLCert(
+  example_crt_DER,
+  example_crt_DER_len,
+  example_key_DER,
+  example_key_DER_len
+);
+
+static HTTPSServer secureServer = HTTPSServer(&httpsCert);
+
+String httpsQueryArg(httpsserver::HTTPRequest *req, const char *name);
+
+void handleRootHttps(httpsserver::HTTPRequest *req, httpsserver::HTTPResponse *res);
+void handleGetHttps(httpsserver::HTTPRequest *req, httpsserver::HTTPResponse *res);
+void handleNotFoundHttps(httpsserver::HTTPRequest *req, httpsserver::HTTPResponse *res);
+void setupHttpsServer();
 
 // Decodes %-encoded strings (it's a thing)
 static String decodeUrl(const String& in) {
@@ -71,7 +103,35 @@ String buildProvisioningPage() {
   page += "</form></body></html>";
   return page;
 }
+String buildProvisioningSuccessPage(const String& ssid, const String& gsid) {
+  String resp = "<!DOCTYPE html><html><body>";
+  resp += "<h3>Received provisioning info</h3>";
+  resp += "<p><b>SSID:</b> " + ssid + "</p>";
+  resp += "<p><b>GSID:</b> " + gsid + "</p>";
+  resp += "<p>You can now close this page.</p>";
+  resp += "</body></html>";
+  return resp;
+}
 
+void applyProvisioningInfo(const String& ssid, const String& pass, const String& gsid) {
+  memset(&provisionInfo, 0, sizeof(provisionInfo));
+
+  strlcpy(provisionInfo.ssid, ssid.c_str(), sizeof(provisionInfo.ssid));
+  strlcpy(provisionInfo.passcode, pass.c_str(), sizeof(provisionInfo.passcode));
+  strlcpy(provisionInfo.gsid, gsid.c_str(), sizeof(provisionInfo.gsid));
+
+  Serial.println("\nProvisioning received:");
+  Serial.print("  SSID: ");
+  Serial.println(provisionInfo.ssid);
+  Serial.print("  PASS: ");
+  Serial.println(provisionInfo.passcode);
+  Serial.print("  GSID: ");
+  Serial.println(provisionInfo.gsid);
+
+  provisionInfo.valid = true;
+  provisionInfo.WiFiPresent = true;
+  saveProvisioningInfoToEEPROM(provisionInfo);
+}
 // ----------------------
 // Handlers
 // ----------------------
@@ -85,56 +145,91 @@ void handleRoot() {
 
 void handleGet() {
   Serial.println("handleGet");
-  // Read raw args (these are URL-encoded for GET)
+
   String ssidRaw = server.hasArg("SSID") ? server.arg("SSID") : "";
   String passRaw = server.hasArg("passcode") ? server.arg("passcode") : "";
   String gsidRaw = server.hasArg("GSID") ? server.arg("GSID") : "";
 
-  // Decode
   String ssid = decodeUrl(ssidRaw);
   String pass = decodeUrl(passRaw);
   String gsid = decodeUrl(gsidRaw);
 
-  // Store into struct safely
-  memset(&provisionInfo, 0, sizeof(provisionInfo));
+  applyProvisioningInfo(ssid, pass, gsid);
 
-  strlcpy(provisionInfo.ssid, ssid.c_str(), sizeof(provisionInfo.ssid));
-  strlcpy(provisionInfo.passcode, pass.c_str(), sizeof(provisionInfo.passcode));
-  strlcpy(provisionInfo.gsid, gsid.c_str(), sizeof(provisionInfo.gsid));
-
-  // Print for debugging
-  Serial.println("\n✅ Provisioning received:");
-  Serial.print("  SSID: ");
-  Serial.println(provisionInfo.ssid);
-  Serial.print("  PASS: ");
-  Serial.println(provisionInfo.passcode);  // consider not printing in production
-  Serial.print("  GSID: ");
-  Serial.println(provisionInfo.gsid);
-
-  // Respond to client
-  String resp = "<!DOCTYPE html><html><body>";
-  resp += "<h3>Received provisioning info</h3>";
-  resp += "<p><b>SSID:</b> " + ssid + "</p>";
-  resp += "<p><b>GSID:</b> " + gsid + "</p>";
-  resp += "<p>You can now close this page.</p>";
-  resp += "</body></html>";
-
+  String resp = buildProvisioningSuccessPage(ssid, gsid);
   server.send(200, "text/html", resp);
-
-  // From here you would typically:
-  //  - persist to NVS/EEPROM
-  //  - stop AP
-  //  - attempt WiFi.begin(ssid, pass)
-  provisionInfo.valid = true;
-  provisionInfo.WiFiPresent = true;
-  saveProvisioningInfoToEEPROM(provisionInfo);
 }
+
 
 void handleNotFound() {
   Serial.println("handleNotFound");
   server.send(404, "text/plain", "Not found");
 }
+String httpsQueryArg(httpsserver::HTTPRequest *req, const char *name) {
+  ResourceParameters *params = req->getParams();
 
+  std::string paramName = name;
+  std::string value;
+
+  if (params->getQueryParameter(paramName, value)) {
+    return decodeUrl(String(value.c_str()));
+  }
+
+  return "";
+}
+
+void handleRootHttps(httpsserver::HTTPRequest *req, httpsserver::HTTPResponse *res) {
+  Serial.println("handleRootHttps");
+
+  String page = buildProvisioningPage();
+
+  res->setHeader("Content-Type", "text/html");
+  res->print(page);
+}
+
+void handleGetHttps(httpsserver::HTTPRequest *req, httpsserver::HTTPResponse *res) {
+  Serial.println("handleGetHttps");
+
+  String ssid = httpsQueryArg(req, "SSID");
+  String pass = httpsQueryArg(req, "passcode");
+  String gsid = httpsQueryArg(req, "GSID");
+
+  applyProvisioningInfo(ssid, pass, gsid);
+
+  String resp = buildProvisioningSuccessPage(ssid, gsid);
+
+  res->setHeader("Content-Type", "text/html");
+  res->print(resp);
+}
+
+void handleNotFoundHttps(httpsserver::HTTPRequest *req, httpsserver::HTTPResponse *res) {
+  Serial.println("handleNotFoundHttps");
+
+  req->discardRequestBody();
+
+  res->setStatusCode(404);
+  res->setStatusText("Not Found");
+  res->setHeader("Content-Type", "text/plain");
+  res->print("Not found");
+}
+void setupHttpsServer() {
+  ResourceNode *httpsRootNode = new ResourceNode("/", "GET", &handleRootHttps);
+  ResourceNode *httpsGetNode = new ResourceNode("/get", "GET", &handleGetHttps);
+  ResourceNode *https404Node = new ResourceNode("", "GET", &handleNotFoundHttps);
+
+  secureServer.registerNode(httpsRootNode);
+  secureServer.registerNode(httpsGetNode);
+  secureServer.setDefaultNode(https404Node);
+
+  Serial.println("Starting HTTPS server on port 443...");
+  secureServer.start();
+
+  if (secureServer.isRunning()) {
+    Serial.println("HTTPS server started.");
+  } else {
+    Serial.println("HTTPS server failed to start.");
+  }
+}
 void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
   switch (event) {
 
@@ -215,6 +310,7 @@ void softAPprovision() {
 
   server.begin();
   Serial.println("✅ HTTP server started (port 80)");
+  setupHttpsServer();
   Serial.printf("Open webpage to %s on device connected to the WiFi\n", WiFi.softAPIP().toString());
 
   uint64_t chipid = ESP.getEfuseMac();  // Writes from LSB to MSB and Byte order is LSB to MSB. Results in a backwards Mac Address
@@ -244,7 +340,12 @@ void softAPprovision() {
   display.display();
 
   while (!provisionInfo.valid) {
-    server.handleClient();
+  server.handleClient();
+
+  if (secureServer.isRunning()) {
+    secureServer.loop();
+  }
+  delay(1);
     if (!provisionInfo.WiFiPresent) {
       Serial.println("Provisioning canceled. Continue without WiFi");
       display.printf("Canceled. No WiFi");
@@ -253,8 +354,13 @@ void softAPprovision() {
     }
   }
 
-  server.stop();
-  WiFi.softAPdisconnect(true);
+server.stop();
+
+if (secureServer.isRunning()) {
+  secureServer.stop();
+}
+
+WiFi.softAPdisconnect(true);
 }
 
 void connectToWiFi() {

@@ -75,7 +75,7 @@ void syncRTCFromNTP() {
 
   Serial.println("Syncing RTC from NTP...");
 
-  configTime(-5 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
 
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo, 10000)) {
