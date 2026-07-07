@@ -3,13 +3,13 @@
 #include <DNSServer.h>
 #include <WebServer.h>
 #include "CSL_AQS_ESP32_V1.h"
+// Self-signed certificate used only for local ESP32 setup at https://192.168.4.1.
+// Browsers will warn because this is not signed by a public certificate authority.
 #include "cert.h"
 #include "private_key.h"
 
-#define HTTPS_REQUEST_MAX_HEADERS 30
-#define HTTPS_REQUEST_MAX_REQUEST_LENGTH 1024
-#define HTTPS_REQUEST_MAX_HEADER_LENGTH 2048
-#define HTTPS_CONNECTION_DATA_CHUNK_SIZE 2048
+// HTTPS request/header limits are set in the CSL-edited library copy:
+// CSLedited_ESP32_IDF5_HTTPS_Server/src/HTTPSServerConstants.hpp
 
 #include <HTTPSServer.hpp>
 #include <SSLCert.hpp>
@@ -31,13 +31,15 @@ using namespace httpsserver;
 
 // ----------------------
 // SoftAP config
+
 static SSLCert httpsCert = SSLCert(
   example_crt_DER,
   example_crt_DER_len,
   example_key_DER,
   example_key_DER_len
 );
-
+// HTTPS provisioning fallback. The existing WebServer on port 80 still handles HTTP;
+// This server adds port 443 for browsers/devices that block plain HTTP setup pages.
 static HTTPSServer secureServer = HTTPSServer(&httpsCert);
 
 String httpsQueryArg(httpsserver::HTTPRequest *req, const char *name);
@@ -112,7 +114,7 @@ String buildProvisioningSuccessPage(const String& ssid, const String& gsid) {
   resp += "</body></html>";
   return resp;
 }
-
+// Shared provisioning save path used by both HTTP and HTTPS handlers to prevent the two setup routes from drifting apart.
 void applyProvisioningInfo(const String& ssid, const String& pass, const String& gsid) {
   memset(&provisionInfo, 0, sizeof(provisionInfo));
 
@@ -123,8 +125,8 @@ void applyProvisioningInfo(const String& ssid, const String& pass, const String&
   Serial.println("\nProvisioning received:");
   Serial.print("  SSID: ");
   Serial.println(provisionInfo.ssid);
-  Serial.print("  PASS: ");
-  Serial.println(provisionInfo.passcode);
+Serial.print("  PASS length: ");
+Serial.println(strlen(provisionInfo.passcode));
   Serial.print("  GSID: ");
   Serial.println(provisionInfo.gsid);
 
@@ -212,6 +214,8 @@ void handleNotFoundHttps(httpsserver::HTTPRequest *req, httpsserver::HTTPRespons
   res->setHeader("Content-Type", "text/plain");
   res->print("Not found");
 }
+// Register HTTPS routes equivalent to the existing HTTP routes:
+// "/" shows the setup page, "/get" receives submitted provisioning values
 void setupHttpsServer() {
   ResourceNode *httpsRootNode = new ResourceNode("/", "GET", &handleRootHttps);
   ResourceNode *httpsGetNode = new ResourceNode("/get", "GET", &handleGetHttps);
@@ -338,19 +342,19 @@ void softAPprovision() {
   displayMac("AP MAC", apMac);
 
   display.display();
-
+// Service both setup servers while waiting for credentials.
   while (!provisionInfo.valid) {
-  server.handleClient();
+    server.handleClient();
 
-  if (secureServer.isRunning()) {
+    if (secureServer.isRunning()) {
     secureServer.loop();
-  }
-  delay(1);
-    if (!provisionInfo.WiFiPresent) {
-      Serial.println("Provisioning canceled. Continue without WiFi");
-      display.printf("Canceled. No WiFi");
-      display.display();
-      break;
+    }
+    delay(1);
+      if (!provisionInfo.WiFiPresent) {
+        Serial.println("Provisioning canceled. Continue without WiFi");
+        display.printf("Canceled. No WiFi");
+        display.display();
+        break;
     }
   }
 

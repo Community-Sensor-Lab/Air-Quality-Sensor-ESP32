@@ -43,21 +43,22 @@
 #endif
 
 // The following lines define limits of the protocol. Exceeding these limits will lead to a 500 error
-
+// CSL change: increase request/header buffers from upstream defaults so modern
+// browsers do not fail ESP32 provisioning with 431 Request Header Fields Too Large.
 #ifndef HTTPS_REQUEST_MAX_HEADERS
-#define HTTPS_REQUEST_MAX_HEADERS               40
+#define HTTPS_REQUEST_MAX_HEADERS               20
 #endif
 
 #ifndef HTTPS_REQUEST_MAX_REQUEST_LENGTH
-#define HTTPS_REQUEST_MAX_REQUEST_LENGTH       2048
+#define HTTPS_REQUEST_MAX_REQUEST_LENGTH       1024
 #endif
 
 #ifndef HTTPS_REQUEST_MAX_HEADER_LENGTH
-#define HTTPS_REQUEST_MAX_HEADER_LENGTH        4096
+#define HTTPS_REQUEST_MAX_HEADER_LENGTH        2048
 #endif
 
 #ifndef HTTPS_CONNECTION_DATA_CHUNK_SIZE
-#define HTTPS_CONNECTION_DATA_CHUNK_SIZE       4096
+#define HTTPS_CONNECTION_DATA_CHUNK_SIZE       2048
 #endif
 
 // Size (in bytes) of the Connection:keep-alive Cache (we need to be able to
