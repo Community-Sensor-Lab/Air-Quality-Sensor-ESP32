@@ -8,15 +8,11 @@
 #include "cert.h"
 #include "private_key.h"
 
+
 // HTTPS request/header limits are set in the CSL-edited library copy:
 // CSLedited_ESP32_IDF5_HTTPS_Server/src/HTTPSServerConstants.hpp
-
-#include <HTTPSServer.hpp>
-#include <SSLCert.hpp>
-#include <HTTPRequest.hpp>
-#include <HTTPResponse.hpp>
-#include <ResourceNode.hpp>
-#include <ResourceParameters.hpp>
+#include <CSLedited_ESP32_IDF5_HTTPS_Server.h>
+// unique header for https library, found in CSLedited copy in github
 #include <string>
 
 using namespace httpsserver;
