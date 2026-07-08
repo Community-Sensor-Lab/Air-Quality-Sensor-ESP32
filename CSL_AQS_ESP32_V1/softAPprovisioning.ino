@@ -2,32 +2,34 @@
 #include <WiFi.h>
 #include <DNSServer.h>
 #include <WebServer.h>
+
 #include "CSL_AQS_ESP32_V1.h"
-// Self-signed certificate used only for local ESP32 setup at https://192.168.4.1.
-// Browsers will warn because this is not signed by a public certificate authority.
+// HTTPS provisioning support:
+// The normal HTTP provisioning page is still kept for compatibility.
+// This adds a local HTTPS version at https://192.168.4.1 for phones, browsers, or networks that block interaction with plain HTTP pages.
+// The browser will show a certificate warning because the ESP32 uses a self-signed certificate, which is expected for this local setup page.
 #include "cert.h"
 #include "private_key.h"
 
 
-// HTTPS request/header limits are set in the CSL-edited library copy:
-// CSLedited_ESP32_IDF5_HTTPS_Server/src/HTTPSServerConstants.hpp
+// Convenience wrapper for the CSL-edited HTTPS server library.
+// Sketches include this unique header so Arduino selects this forked copy instead of another installed HTTPS server library with generic header names.
 #include <CSLedited_ESP32_IDF5_HTTPS_Server.h>
-// unique header for https library, found in CSLedited copy in github
 #include <string>
 
 using namespace httpsserver;
 
 /**
 * Starts a wifi access point with a unique name 'csl-xxxx' and starts a server.
-* When client connects with a browser at specified ip (192.168.4.1), serves a 
-* provisioning page to client with fields for ssid, passcode and gsid entry
-* (gsid is the unique identifier for google script). Parses the response and decodes 
-* the string for any %-encoded characters, and saves to memory
+* When client connects with a browser at specified ip (192.168.4.1), serves a  provisioning page to client with fields for ssid, passcode and gsid entry
+* Parses the response and decodes the string for any %-encoded characters, and saves to memory
 */
 
 // ----------------------
 // SoftAP config
 
+// Local self-signed certificate for the ESP32 setup page.
+// This enables HTTPS on the ESP32 access point, but browsers will still warn because the certificate is not signed by a public certificate authority.
 static SSLCert httpsCert = SSLCert(
   example_crt_DER,
   example_crt_DER_len,
@@ -43,9 +45,12 @@ String httpsQueryArg(httpsserver::HTTPRequest *req, const char *name);
 void handleRootHttps(httpsserver::HTTPRequest *req, httpsserver::HTTPResponse *res);
 void handleGetHttps(httpsserver::HTTPRequest *req, httpsserver::HTTPResponse *res);
 void handleNotFoundHttps(httpsserver::HTTPRequest *req, httpsserver::HTTPResponse *res);
+// These ResourceNodes are registered when provisioning starts.
+// If provisioning can restart in the same boot, avoid registering duplicates.
 void setupHttpsServer();
 
-// Decodes %-encoded strings (it's a thing)
+// Decode URL form values from GET query strings.
+// Spaces and special characters in SSIDs/passwords may arrive as + or %XX.
 static String decodeUrl(const String& in) {
   // Decodes application/x-www-form-urlencoded for query strings
   String out;
@@ -83,7 +88,7 @@ static String decodeUrl(const String& in) {
 String buildProvisioningPage() {
   int n = WiFi.scanNetworks();                                                       //scans avaliable wifi using the built in function and stores it in n variablr
   String page = "<!DOCTYPE HTML><html><head><title>Provision</title></head><body>";  //sets up the title of the page
-  page += "<form action=\"/get\">";                                                  //adds a form to the page anf uses get request
+  page += "<form action=\"/get\">";                                                  //adds a form to the page and users get request
 
   //uses the select function  that creates a dropdown list
   //the option value iterates through n with the networks and add it to the select column as an option
@@ -101,6 +106,7 @@ String buildProvisioningPage() {
   page += "</form></body></html>";
   return page;
 }
+// Build the confirmation page shared by HTTP and HTTPS after credentials submit.
 String buildProvisioningSuccessPage(const String& ssid, const String& gsid) {
   String resp = "<!DOCTYPE html><html><body>";
   resp += "<h3>Received provisioning info</h3>";
@@ -121,8 +127,9 @@ void applyProvisioningInfo(const String& ssid, const String& pass, const String&
   Serial.println("\nProvisioning received:");
   Serial.print("  SSID: ");
   Serial.println(provisionInfo.ssid);
-Serial.print("  PASS length: ");
-Serial.println(strlen(provisionInfo.passcode));
+  // Do not print the WiFi password itself; length confirms something was entered.
+  Serial.print("  PASS length: ");
+  Serial.println(strlen(provisionInfo.passcode));
   Serial.print("  GSID: ");
   Serial.println(provisionInfo.gsid);
 
@@ -163,6 +170,8 @@ void handleNotFound() {
   Serial.println("handleNotFound");
   server.send(404, "text/plain", "Not found");
 }
+// HTTPS query helper.
+// Arduino WebServer uses server.arg(...), but ESP32_IDF5_HTTPS_Server exposes query values through ResourceParameters instead.
 String httpsQueryArg(httpsserver::HTTPRequest *req, const char *name) {
   ResourceParameters *params = req->getParams();
 
@@ -337,14 +346,15 @@ void softAPprovision() {
   displayMac("STA MAC", staMac);
   displayMac("AP MAC", apMac);
 
+// Service both setup servers while waiting for valid credentials.
+// HTTP helps older/simple clients; HTTPS helps browsers that block plain HTTP.
   display.display();
-// Service both setup servers while waiting for credentials.
   while (!provisionInfo.valid) {
     server.handleClient();
 
-    if (secureServer.isRunning()) {
+  if (secureServer.isRunning()) {
     secureServer.loop();
-    }
+  }
     delay(1);
       if (!provisionInfo.WiFiPresent) {
         Serial.println("Provisioning canceled. Continue without WiFi");

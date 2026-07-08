@@ -50,15 +50,15 @@
 #endif
 
 #ifndef HTTPS_REQUEST_MAX_REQUEST_LENGTH
-#define HTTPS_REQUEST_MAX_REQUEST_LENGTH       1024
+#define HTTPS_REQUEST_MAX_REQUEST_LENGTH       1024 // original default : 128
 #endif
 
 #ifndef HTTPS_REQUEST_MAX_HEADER_LENGTH
-#define HTTPS_REQUEST_MAX_HEADER_LENGTH        2048
+#define HTTPS_REQUEST_MAX_HEADER_LENGTH        2048 // original default : 384
 #endif
 
 #ifndef HTTPS_CONNECTION_DATA_CHUNK_SIZE
-#define HTTPS_CONNECTION_DATA_CHUNK_SIZE       2048
+#define HTTPS_CONNECTION_DATA_CHUNK_SIZE       2048 // original default : 512
 #endif
 
 // Size (in bytes) of the Connection:keep-alive Cache (we need to be able to
