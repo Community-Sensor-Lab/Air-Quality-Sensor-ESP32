@@ -86,7 +86,7 @@ void setup() {
 
   initializeClient();
   Serial.println("*** Adding header to google sheet. ");
-    doPost(PRE_PAYLOAD_ADD_HEADER HEADER);
+    bool headerOk = doPost(PRE_PAYLOAD_ADD_HEADER HEADER);
     Serial.println("\n*** Done adding header to google sheet");
     delay(5000);
   }
@@ -101,6 +101,15 @@ void loop() {
 
   String rssi_quality;          //intializes wifi quality variable
   int wifi_rssi = WiFi.RSSI();  //variable for the rssi strength
+  if (WiFi.status() == WL_CONNECTED) {
+    lastWifiRssi = wifi_rssi;
+    staIpText = WiFi.localIP().toString();
+    staConnected = true;
+    wifiStatusText = "WiFi:OK";
+  } else {
+    staConnected = false;
+    wifiStatusText = "WiFi:FAIL";
+  }
 
   if (wifi_rssi > -50) rssi_quality = "Excellent";
   else if (wifi_rssi > -60) rssi_quality = "Good";
@@ -121,17 +130,41 @@ void loop() {
 
   logfile.println(outString);
   logfile.flush();
-
+  // Show sensor readings with network/upload status for field debugging without Serial Monitor
   display.clearDisplay();
   display.setCursor(0, 0);
-  display.printf("Temp: %.2f C\nP: %.2f mBar\nRH: %.2f%%\n", sensorData.Tbme, sensorData.Pbme, sensorData.RHbme);
-  display.printf("CO2: %d ppm\nPM2.5: %.2f ug/m^3\nVOCs: %.2f\n", sensorData.CO2, sensorData.mPm2_5, sensorData.VOCs);
-  display.printf("Bat: %.2f V\n", sensorData.Vbat);
+
+  display.printf("T:%.1f P:%.0f\n", sensorData.Tbme, sensorData.Pbme);
+  display.printf("RH:%.0f CO2:%d\n", sensorData.RHbme, sensorData.CO2);
+  display.printf("PM25:%.1f VOC:%.1f\n", sensorData.mPm2_5, sensorData.VOCs);
+  display.printf("Bat:%.2fV\n", sensorData.Vbat);
+
+  display.printf("STA:%s %d\n", staIpText.c_str(), lastWifiRssi);
+  display.printf("AP:%s\n", apActive ? apIpText.c_str() : "off");
+  display.printf("%s\n", googleStatusText.c_str());
+  display.printf("M:%s\n", staMacShort.c_str());
+
   display.display();
 
   if (WiFi.status() == WL_CONNECTED) {
-    doPost(PRE_PAYLOAD_APPEND_ROW + outString);
+    bool postOk = doPost(PRE_PAYLOAD_APPEND_ROW + outString);
   }
+  // Refresh OLED after upload so the latest Google status is visible immediately
+  display.clearDisplay();
+  display.setCursor(0, 0);
+
+  display.printf("T:%.1f P:%.0f\n", sensorData.Tbme, sensorData.Pbme);
+  display.printf("RH:%.0f CO2:%d\n", sensorData.RHbme, sensorData.CO2);
+  display.printf("PM25:%.1f VOC:%.1f\n", sensorData.mPm2_5, sensorData.VOCs);
+  display.printf("Bat:%.2fV\n", sensorData.Vbat);
+
+  display.printf("STA:%s %d\n", staIpText.c_str(), lastWifiRssi);
+  display.printf("AP:%s\n", apActive ? apIpText.c_str() : "off");
+  display.printf("%s\n", googleStatusText.c_str());
+  display.printf("M:%s\n", staMacShort.c_str());
+
+  display.display();
+
   if (!provisionInfo.valid && provisionInfo.WiFiPresent) {
     softAPprovision();
     connectToWiFi();
@@ -141,6 +174,6 @@ void loop() {
     display.println("No WiFi");
     display.display();
   }
-
+server.handleClient();
   delay(60000);  // 1 minute
 }

@@ -118,7 +118,7 @@ String buildProvisioningSuccessPage(const String& ssid, const String& gsid) {
 }
 // Shared provisioning save path used by both HTTP and HTTPS handlers to prevent the two setup routes from drifting apart.
 void applyProvisioningInfo(const String& ssid, const String& pass, const String& gsid) {
-  // Preserve the previous Google Script ID when the GSID field is left blank
+  // Reuse the saved Google Script ID when the provisioning GSID field is blank
   char savedGsid[sizeof(provisionInfo.gsid)];
   strlcpy(savedGsid, provisionInfo.gsid, sizeof(savedGsid));
 
@@ -131,9 +131,9 @@ void applyProvisioningInfo(const String& ssid, const String& pass, const String&
   strlcpy(provisionInfo.passcode, pass.c_str(), sizeof(provisionInfo.passcode));
 
   if (cleanedGsid.length() > 0) {
-    // Blank GSID means reuse the last saved value
     strlcpy(provisionInfo.gsid, cleanedGsid.c_str(), sizeof(provisionInfo.gsid));
   } else {
+    // Blank GSID means reuse the last saved value
     strlcpy(provisionInfo.gsid, savedGsid, sizeof(provisionInfo.gsid));
   }
 
@@ -305,7 +305,7 @@ void softAPprovision() {
   static const IPAddress AP_IP(192, 168, 4, 1);
   static const IPAddress AP_GW(192, 168, 4, 1);
   static const IPAddress AP_MASK(255, 255, 255, 0);
-  // Allow scanning while also running SoftAP
+  // Use AP+STA so the ESP32 can host phone access while connected to the router
   WiFi.mode(WIFI_AP_STA);
 
   //mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFF), HEX);
@@ -316,12 +316,18 @@ void softAPprovision() {
   display.setCursor(0, 0);
 
   if (!WiFi.softAP(mac_ssid.c_str())) {
-    Serial.println("❌ softAP start failed");
+    Serial.println("[AP] SoftAP start failed");
     display.printf("SoftAP start failed\n");
+
+    apActive = false;
+    apIpText = "";
   } else {
-    Serial.printf("✅ Started Provisioning Wifi: %s\n", mac_ssid);
-    display.printf("Started Provisioning Wifi:%s\n", mac_ssid);
-  }
+    Serial.printf("[AP] Started: %s\n", mac_ssid.c_str());
+    display.printf("Started AP:%s\n", mac_ssid.c_str());
+
+  apActive = true;
+  apIpText = WiFi.softAPIP().toString();
+}
   display.display();
 
   // Web routes
@@ -349,6 +355,14 @@ void softAPprovision() {
 
   uint8_t apMac[6];
   WiFi.softAPmacAddress(apMac);
+    char apMacBuf[20];
+  snprintf(apMacBuf, sizeof(apMacBuf),
+    "%02X:%02X:%02X:%02X:%02X:%02X",
+    apMac[0], apMac[1], apMac[2],
+    apMac[3], apMac[4], apMac[5]);
+
+apMacText = String(apMacBuf);
+apMacShort = apMacText.substring(9);
 
   printMac("AP MAC", apMac);
 
@@ -376,13 +390,14 @@ void softAPprovision() {
     }
   }
 
-server.stop();
+// Keep HTTP server active so phones can connect after provisioning.
+// server.stop();
 
 if (secureServer.isRunning()) {
   secureServer.stop();
 }
-
-WiFi.softAPdisconnect(true);
+// Keep SoftAP active so phones can connect after provisioning.
+// WiFi.softAPdisconnect(true);
 }
 
 void connectToWiFi() {
@@ -391,23 +406,50 @@ void connectToWiFi() {
   Serial.printf("\nWill try to connect to WiFi: %s\n", provisionInfo.ssid);
   display.clearDisplay();
   display.setCursor(0, 0);
-  display.printf("(A) Provisioning\n");
-  display.printf("(B) No WiFi\n");
-  display.printf("Trying:%s\n", provisionInfo.ssid);
-  display.display();
 
-  WiFi.mode(WIFI_STA);
+  display.printf("T:%.1f P:%.0f\n", sensorData.Tbme, sensorData.Pbme);
+  display.printf("RH:%.0f CO2:%d\n", sensorData.RHbme, sensorData.CO2);
+  display.printf("PM25:%.1f VOC:%.1f\n", sensorData.mPm2_5, sensorData.VOCs);
+  display.printf("Bat:%.2fV\n", sensorData.Vbat);
+
+  display.printf("STA:%s %d\n", staIpText.c_str(), lastWifiRssi);
+  display.printf("AP:%s\n", apIpText.c_str());
+  display.printf("%s\n", googleStatusText.c_str());
+  
+  display.printf("S:%s A:%s\n", staMacShort.c_str(), apMacShort.c_str());
+  display.display();
+  
+// Keep AP alive while joining WiFi so phone access and uploads can coexist
+ WiFi.mode(WIFI_AP_STA);
+  wifiStatusText = "WiFi:JOIN";
+  staConnected = false;
+  staIpText = "";
+  lastWifiRssi = 0;
   WiFi.begin(provisionInfo.ssid, provisionInfo.passcode);
+
+  uint8_t staMac[6];
+  WiFi.macAddress(staMac);
+
+    char staMacBuf[20];
+    snprintf(staMacBuf, sizeof(staMacBuf),
+      "%02X:%02X:%02X:%02X:%02X:%02X",
+      staMac[0], staMac[1], staMac[2],
+      staMac[3], staMac[4], staMac[5]);
+
+staMacText = String(staMacBuf);
+staMacShort = staMacText.substring(9);
 
   unsigned long st = millis();
   while (WiFi.status() != WL_CONNECTED && provisionInfo.WiFiPresent && provisionInfo.valid) {
     Serial.print(".");
     delay(100);
     if ((millis() - st) > WIFI_TIMEOUT) {
-      Serial.println("wifi connect timeout");
+      Serial.println("[WIFI] Connect timeout");
       provisionInfo.valid = false;
-      break;
-    }
+      staConnected = false;
+      wifiStatusText = "WiFi:FAIL";
+  break;
+}
   }
 
   if (WiFi.status() == WL_CONNECTED) {
@@ -423,6 +465,10 @@ void connectToWiFi() {
             (uint8_t)(mac >> 32) & 0xFF,
             (uint8_t)(mac >> 40) & 0xFF);
     FullmacStr = String(macBuf);
+    staConnected = true;
+    staIpText = WiFi.localIP().toString();
+    lastWifiRssi = WiFi.RSSI();
+    wifiStatusText = "WiFi:OK";
 
     Serial.printf("\nConnected to WiFi: %s\n", provisionInfo.ssid);
     display.printf("\nConnected to WiFi: \n\n%s", provisionInfo.ssid);

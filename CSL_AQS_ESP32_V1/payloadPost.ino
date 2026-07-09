@@ -53,37 +53,53 @@ void initializeClient() {
   client.setCACert(test_root_ca);
 }
 
-void doPost(String outstr) {
+bool doPost(String outstr) {
+  googleStatusText = "GS:SEND";
 
   String payload = outstr + POST_PAYLOAD;
   Serial.println(payload);
 
   Serial.print("\nStarting connection to server... ");
-  if (!client.connect(SERVER, 443))
-    Serial.println("Connection failed");
-  else {
-    Serial.println("Connected to server");
-    // Make a HTTP request:
-    // client.println("POST /macros/s/AKfycbxwxxCaHA24OhuHJWrZQ79a6qOfYCm4-fPbDFGRt9JSZEGv345UuFR-kJw6Sgv7wZq3Qw/exec? HTTP/1.0");//value=Hello HTTP/1.0");
-    client.println("POST /macros/s/" + String(provisionInfo.gsid) + "/exec? HTTP/1.0");  //value=Hello HTTP/1.0");
-    client.println("Host: " SERVER);
-    client.println("Content-Type: application/x-www-form-urlencoded");
-    //client.println("Connection: close");
-    client.print("Content-Length: ");
-    client.println(payload.length());
-    client.println();
-    //Serial.println(String(PRE_PAYLOAD) + String(payload) + String(POST_PAYLOAD));
-    client.print(payload);
-    client.println();
-    delay(200);
-    Serial.println("\nResponse from client: ");
 
-    while (client.connected()) {
-      while (client.available()) {
-        char c = client.read();
-        Serial.write(c);
-      }
-    }
-    client.stop();
+  if (!client.connect(SERVER, 443)) {
+    Serial.println("[POST] Connection failed");
+    googleStatusText = "GS:FAIL";
+    return false;
   }
+
+  client.println("POST /macros/s/" + String(provisionInfo.gsid) + "/exec? HTTP/1.0");
+  client.println("Host: " SERVER);
+  client.println("Content-Type: application/x-www-form-urlencoded");
+  client.print("Content-Length: ");
+  client.println(payload.length());
+  client.println();
+  client.print(payload);
+  client.println();
+
+  delay(200);
+  Serial.println("\nResponse from client: ");
+
+  String response = "";
+
+  while (client.connected()) {
+    while (client.available()) {
+      char c = client.read();
+      response += c;
+      Serial.write(c);
+    }
+  }
+  client.stop();
+
+// Treat Google Apps Script redirects as upload success because rows still append.
+if (response.indexOf("100") >= 0 ||
+    response.indexOf("Moved Temporarily") >= 0 ||
+    response.indexOf("script.googleusercontent.com") >= 0) {
+  googleStatusText = "GS:OK";
+  Serial.println("[POST] OK Google response");
+  return true;
+}
+
+  googleStatusText = "GS:FAIL";
+  Serial.println("[POST] FAIL marker missing");
+  return false;
 }

@@ -18,6 +18,21 @@
 #define WIFI_TIMEOUT 10000 // how long to wait for connection in ms
 //#define SD_CS 10    // Chip select for SD card default for Adalogger
 
+// Shared AP, STA, and Google upload status fields for OLED/debug display.
+// Info for OLED display about Google and WiFi connection
+String apIpText = "";
+String staIpText = "";
+String googleStatusText = "GS:--";
+String wifiStatusText = "WiFi:--";
+// displays Mac Address on OLED
+String staMacText = "";
+String apMacText = "";
+String staMacShort = "";
+String apMacShort = "";
+
+int lastWifiRssi = 0;
+bool apActive = false;
+bool staConnected = false;
 /* STRUCT TO STORE ALL SENSOR DATA */
 typedef struct {
   DateTime now; 
