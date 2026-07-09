@@ -41,6 +41,9 @@ void setup() {
   display.display();
 
   provisioningFromEEPROM();  // get EEPROM info
+  uint32_t mac_reversed = (uint32_t)(ESP.getEfuseMac() >> 24) & 0xFFFFFF;
+  uint32_t mac_original = ((mac_reversed & 0xFF) << 16) | ((mac_reversed & 0xFF00)) | ((mac_reversed & 0xFF0000) >> 16);
+  mac_ssid = "csl-" + String(mac_original, HEX);
 
   Serial.printf("10s to decide\n");
   unsigned long ts = millis();
@@ -55,20 +58,14 @@ void setup() {
     Serial.println();
   }
 
-  // If we have a valid provision and wifi, try it out
+  // Start phone AP/status server before joining router WiFi with saved credentials
   if (provisionInfo.valid && provisionInfo.WiFiPresent) {
+    softAPprovision();
     connectToWiFi();
   }
 
   // Go for provisioning. ENTER HERE IF TIMED OUT OR PROVISION NOT VALID OR A PRESSED OR B PRESSED
   while (!provisionInfo.valid && provisionInfo.WiFiPresent) {  // ENTER IF A PRESSED OR PROVISION NOT VALID
-
-    uint32_t mac_reversed = (uint32_t)(ESP.getEfuseMac() >> 24) & 0xFFFFFF;
-    uint32_t mac_original = ((mac_reversed & 0xFF) << 16) | ((mac_reversed & 0xFF00)) | ((mac_reversed & 0xFF0000) >> 16); //Shift addresses to correct positions
-
-    mac_ssid = "csl-" + String(mac_original, HEX);
-    // mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() >> 24) & 0xFFFFFF, HEX);
-
     Serial.println("going to softAPprovision");
     softAPprovision();  // may change to not valid
     if (provisionInfo.valid && provisionInfo.WiFiPresent) {
@@ -82,98 +79,90 @@ void setup() {
     display.display();
   }
   if (WiFi.status() == WL_CONNECTED) {
-  syncRTCFromNTP();
+    syncRTCFromNTP();
 
-  initializeClient();
-  Serial.println("*** Adding header to google sheet. ");
-    bool headerOk = doPost(PRE_PAYLOAD_ADD_HEADER HEADER);
-    Serial.println("\n*** Done adding header to google sheet");
+    initializeClient();
+    Serial.println("[POST] Adding header to Google sheet");
+
+    if (doPost(PRE_PAYLOAD_ADD_HEADER HEADER)) {
+      Serial.println("[POST] Header upload complete");
+    } else {
+      Serial.println("[POST] Header upload failed");
+    }
     delay(5000);
   }
 }
 
 void loop() {
+  server.handleClient();
+
+  if (!provisionInfo.valid && provisionInfo.WiFiPresent) {
+    softAPprovision();
+    connectToWiFi();
+  }
+
+  if (!provisionInfo.WiFiPresent) {
+    Serial.println("No WiFi");
+    display.println("No WiFi");
+    display.display();
+    return;
+  }
+  // Keep loop responsive between samples so the phone web page can be served
+  if (!firstSample && millis() - lastSampleMs < SAMPLE_INTERVAL_MS) {
+    return;
+  }
+
+  firstSample = false;
+  lastSampleMs = millis();
 
   String bme = readBME();
   String sen55 = readSEN55();
   String scd41 = readSCD41();
-  DateTime now = rtc.now();  // fetch the date + time
+  DateTime now = rtc.now();
 
-  String rssi_quality;          //intializes wifi quality variable
-  int wifi_rssi = WiFi.RSSI();  //variable for the rssi strength
+  int wifi_rssi = 0;
+  String rssi_quality = "No WiFi";
+
   if (WiFi.status() == WL_CONNECTED) {
+    wifi_rssi = WiFi.RSSI();
     lastWifiRssi = wifi_rssi;
     staIpText = WiFi.localIP().toString();
     staConnected = true;
     wifiStatusText = "WiFi:OK";
+
+    if (wifi_rssi > -50) rssi_quality = "Excellent";
+    else if (wifi_rssi > -60) rssi_quality = "Good";
+    else if (wifi_rssi > -70) rssi_quality = "Fair";
+    else rssi_quality = "Poor";
   } else {
     staConnected = false;
     wifiStatusText = "WiFi:FAIL";
   }
 
-  if (wifi_rssi > -50) rssi_quality = "Excellent";
-  else if (wifi_rssi > -60) rssi_quality = "Good";
-  else if (wifi_rssi > -70) rssi_quality = "Fair";
-  else rssi_quality = "Poor";
-
-  pinMode(VBATPIN, INPUT);  // read battery voltage
+  pinMode(VBATPIN, INPUT);
   sensorData.Vbat = float(analogReadMilliVolts(VBATPIN) * 2.0 / 1000.00);
   pinMode(BUTTON_A, INPUT_PULLUP);
 
   char tstring[128];
   sprintf(tstring, "%02u/%02u/%02u %02u:%02u:%02u, ", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
 
-  String outString = String(tstring) + bme + scd41 + sen55 + String(sensorData.Vbat) + "," + FullmacStr + "," + String(provisionInfo.ssid) + "," + wifi_rssi + "," + rssi_quality;  //adds all the clumns values
+  String outString = String(tstring) + bme + scd41 + sen55 + String(sensorData.Vbat) + "," + FullmacStr + "," + String(provisionInfo.ssid) + "," + wifi_rssi + "," + rssi_quality;
 
   Serial.println(HEADER);
   Serial.println(outString);
 
   logfile.println(outString);
   logfile.flush();
-  // Show sensor readings with network/upload status for field debugging without Serial Monitor
-  display.clearDisplay();
-  display.setCursor(0, 0);
 
-  display.printf("T:%.1f P:%.0f\n", sensorData.Tbme, sensorData.Pbme);
-  display.printf("RH:%.0f CO2:%d\n", sensorData.RHbme, sensorData.CO2);
-  display.printf("PM25:%.1f VOC:%.1f\n", sensorData.mPm2_5, sensorData.VOCs);
-  display.printf("Bat:%.2fV\n", sensorData.Vbat);
-
-  display.printf("STA:%s %d\n", staIpText.c_str(), lastWifiRssi);
-  display.printf("AP:%s\n", apActive ? apIpText.c_str() : "off");
-  display.printf("%s\n", googleStatusText.c_str());
-  display.printf("M:%s\n", staMacShort.c_str());
-
-  display.display();
+  displaySensorStatus();
 
   if (WiFi.status() == WL_CONNECTED) {
-    bool postOk = doPost(PRE_PAYLOAD_APPEND_ROW + outString);
+    if (doPost(PRE_PAYLOAD_APPEND_ROW + outString)) {
+      Serial.println("[POST] Row upload complete");
+    } else {
+      Serial.println("[POST] Row upload failed");
+    }
   }
-  // Refresh OLED after upload so the latest Google status is visible immediately
-  display.clearDisplay();
-  display.setCursor(0, 0);
 
-  display.printf("T:%.1f P:%.0f\n", sensorData.Tbme, sensorData.Pbme);
-  display.printf("RH:%.0f CO2:%d\n", sensorData.RHbme, sensorData.CO2);
-  display.printf("PM25:%.1f VOC:%.1f\n", sensorData.mPm2_5, sensorData.VOCs);
-  display.printf("Bat:%.2fV\n", sensorData.Vbat);
-
-  display.printf("STA:%s %d\n", staIpText.c_str(), lastWifiRssi);
-  display.printf("AP:%s\n", apActive ? apIpText.c_str() : "off");
-  display.printf("%s\n", googleStatusText.c_str());
-  display.printf("M:%s\n", staMacShort.c_str());
-
-  display.display();
-
-  if (!provisionInfo.valid && provisionInfo.WiFiPresent) {
-    softAPprovision();
-    connectToWiFi();
-  }
-  if (!provisionInfo.WiFiPresent) {
-    Serial.println("No WiFi");
-    display.println("No WiFi");
-    display.display();
-  }
-server.handleClient();
-  delay(60000);  // 1 minute
+  displaySensorStatus();
 }

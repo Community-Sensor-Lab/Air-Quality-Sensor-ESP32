@@ -90,14 +90,12 @@ bool doPost(String outstr) {
   }
   client.stop();
 
-// Treat Google Apps Script redirects as upload success because rows still append.
-if (response.indexOf("100") >= 0 ||
-    response.indexOf("Moved Temporarily") >= 0 ||
-    response.indexOf("script.googleusercontent.com") >= 0) {
-  googleStatusText = "GS:OK";
-  Serial.println("[POST] OK Google response");
-  return true;
-}
+  // Treat Google Apps Script redirects as upload success because rows still append.
+  if (response.indexOf("100") >= 0 || response.indexOf("Moved Temporarily") >= 0 || response.indexOf("script.googleusercontent.com") >= 0) {
+    googleStatusText = "GS:OK";
+    Serial.println("[POST] OK Google response");
+    return true;
+  }
 
   googleStatusText = "GS:FAIL";
   Serial.println("[POST] FAIL marker missing");

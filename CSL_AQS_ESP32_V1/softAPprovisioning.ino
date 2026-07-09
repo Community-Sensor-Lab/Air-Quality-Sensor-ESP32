@@ -34,8 +34,7 @@ static SSLCert httpsCert = SSLCert(
   example_crt_DER,
   example_crt_DER_len,
   example_key_DER,
-  example_key_DER_len
-);
+  example_key_DER_len);
 // HTTPS provisioning fallback. The existing WebServer on port 80 still handles HTTP;
 // This server adds port 443 for browsers/devices that block plain HTTP setup pages.
 static HTTPSServer secureServer = HTTPSServer(&httpsCert);
@@ -51,7 +50,7 @@ void setupHttpsServer();
 
 // Decode URL form values from GET query strings.
 // Spaces and special characters in SSIDs/passwords may arrive as + or %XX.
-static String decodeUrl(const String& in) {
+static String decodeUrl(const String &in) {
   // Decodes application/x-www-form-urlencoded for query strings
   String out;
   out.reserve(in.length());
@@ -100,14 +99,14 @@ String buildProvisioningPage() {
   //text input for passcode
   page += "Passcode: <input type=\"password\" name=\"passcode\"><br>";
   //text input for GSID
-  page += "GSID: <input type=\"text\" name=\"GSID\" placeholder=\"leave blank to reuse saved\"><br>"; // keeps old GSID if not filled in by user
+  page += "GSID: <input type=\"text\" name=\"GSID\" placeholder=\"leave blank to reuse saved\"><br>";  // keeps old GSID if not filled in by user
   //adds a submit button
   page += "<input type=\"submit\" value=\"Submit\">";
   page += "</form></body></html>";
   return page;
 }
 // Build the confirmation page shared by HTTP and HTTPS after credentials submit.
-String buildProvisioningSuccessPage(const String& ssid, const String& gsid) {
+String buildProvisioningSuccessPage(const String &ssid, const String &gsid) {
   String resp = "<!DOCTYPE html><html><body>";
   resp += "<h3>Received provisioning info</h3>";
   resp += "<p><b>SSID:</b> " + ssid + "</p>";
@@ -117,7 +116,7 @@ String buildProvisioningSuccessPage(const String& ssid, const String& gsid) {
   return resp;
 }
 // Shared provisioning save path used by both HTTP and HTTPS handlers to prevent the two setup routes from drifting apart.
-void applyProvisioningInfo(const String& ssid, const String& pass, const String& gsid) {
+void applyProvisioningInfo(const String &ssid, const String &pass, const String &gsid) {
   // Reuse the saved Google Script ID when the provisioning GSID field is blank
   char savedGsid[sizeof(provisionInfo.gsid)];
   strlcpy(savedGsid, provisionInfo.gsid, sizeof(savedGsid));
@@ -283,14 +282,14 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
   }
 }
 
-void printMac(const char* label, uint8_t mac[6]) {
+void printMac(const char *label, uint8_t mac[6]) {
   Serial.printf("%s: %02X:%02X:%02X:%02X:%02X:%02X\n",  //Writes in Hex w/ zero padding
                 label,
                 mac[0], mac[1], mac[2],
                 mac[3], mac[4], mac[5]);
 }
 
-void displayMac(const char* label, uint8_t mac[6]) {
+void displayMac(const char *label, uint8_t mac[6]) {
   char buf[32];
 
   snprintf(buf, sizeof(buf),  //Less chance of buffer overflowing
@@ -325,9 +324,9 @@ void softAPprovision() {
     Serial.printf("[AP] Started: %s\n", mac_ssid.c_str());
     display.printf("Started AP:%s\n", mac_ssid.c_str());
 
-  apActive = true;
-  apIpText = WiFi.softAPIP().toString();
-}
+    apActive = true;
+    apIpText = WiFi.softAPIP().toString();
+  }
   display.display();
 
   // Web routes
@@ -355,14 +354,14 @@ void softAPprovision() {
 
   uint8_t apMac[6];
   WiFi.softAPmacAddress(apMac);
-    char apMacBuf[20];
+  char apMacBuf[20];
   snprintf(apMacBuf, sizeof(apMacBuf),
-    "%02X:%02X:%02X:%02X:%02X:%02X",
-    apMac[0], apMac[1], apMac[2],
-    apMac[3], apMac[4], apMac[5]);
+           "%02X:%02X:%02X:%02X:%02X:%02X",
+           apMac[0], apMac[1], apMac[2],
+           apMac[3], apMac[4], apMac[5]);
 
-apMacText = String(apMacBuf);
-apMacShort = apMacText.substring(9);
+  apMacText = String(apMacBuf);
+  apMacShort = apMacText.substring(9);
 
   printMac("AP MAC", apMac);
 
@@ -372,36 +371,37 @@ apMacShort = apMacText.substring(9);
   displayMac("STA MAC", staMac);
   displayMac("AP MAC", apMac);
 
-// Service both setup servers while waiting for valid credentials.
-// HTTP helps older/simple clients; HTTPS helps browsers that block plain HTTP.
+  // Service both setup servers while waiting for valid credentials.
+  // HTTP helps older/simple clients; HTTPS helps browsers that block plain HTTP.
   display.display();
   while (!provisionInfo.valid) {
     server.handleClient();
 
-  if (secureServer.isRunning()) {
-    secureServer.loop();
-  }
+    if (secureServer.isRunning()) {
+      secureServer.loop();
+    }
     delay(1);
-      if (!provisionInfo.WiFiPresent) {
-        Serial.println("Provisioning canceled. Continue without WiFi");
-        display.printf("Canceled. No WiFi");
-        display.display();
-        break;
+    if (!provisionInfo.WiFiPresent) {
+      Serial.println("Provisioning canceled. Continue without WiFi");
+      display.printf("Canceled. No WiFi");
+      display.display();
+      break;
     }
   }
 
-// Keep HTTP server active so phones can connect after provisioning.
-// server.stop();
+  // Keep HTTP active after provisioning; phones use HTTP because local HTTPS certs are unreliable
+  // server.stop();
 
-if (secureServer.isRunning()) {
-  secureServer.stop();
-}
-// Keep SoftAP active so phones can connect after provisioning.
-// WiFi.softAPdisconnect(true);
+  // Stop HTTPS after setup to reduce overhead; laptops can still use HTTPS during provisioning
+  if (secureServer.isRunning()) {
+    secureServer.stop();
+  }
+  // Keep SoftAP active so phones can connect after provisioning.
+  // WiFi.softAPdisconnect(true);
 }
 
 void connectToWiFi() {
-
+  // Brief pause lets WiFi mode changes settle before joining the router
   delay(1000);
   Serial.printf("\nWill try to connect to WiFi: %s\n", provisionInfo.ssid);
   display.clearDisplay();
@@ -415,12 +415,12 @@ void connectToWiFi() {
   display.printf("STA:%s %d\n", staIpText.c_str(), lastWifiRssi);
   display.printf("AP:%s\n", apIpText.c_str());
   display.printf("%s\n", googleStatusText.c_str());
-  
+
   display.printf("S:%s A:%s\n", staMacShort.c_str(), apMacShort.c_str());
   display.display();
-  
-// Keep AP alive while joining WiFi so phone access and uploads can coexist
- WiFi.mode(WIFI_AP_STA);
+
+  // Keep AP alive while joining WiFi so phone access and uploads can coexist
+  WiFi.mode(WIFI_AP_STA);
   wifiStatusText = "WiFi:JOIN";
   staConnected = false;
   staIpText = "";
@@ -430,14 +430,14 @@ void connectToWiFi() {
   uint8_t staMac[6];
   WiFi.macAddress(staMac);
 
-    char staMacBuf[20];
-    snprintf(staMacBuf, sizeof(staMacBuf),
-      "%02X:%02X:%02X:%02X:%02X:%02X",
-      staMac[0], staMac[1], staMac[2],
-      staMac[3], staMac[4], staMac[5]);
+  char staMacBuf[20];
+  snprintf(staMacBuf, sizeof(staMacBuf),
+           "%02X:%02X:%02X:%02X:%02X:%02X",
+           staMac[0], staMac[1], staMac[2],
+           staMac[3], staMac[4], staMac[5]);
 
-staMacText = String(staMacBuf);
-staMacShort = staMacText.substring(9);
+  staMacText = String(staMacBuf);
+  staMacShort = staMacText.substring(9);
 
   unsigned long st = millis();
   while (WiFi.status() != WL_CONNECTED && provisionInfo.WiFiPresent && provisionInfo.valid) {
@@ -448,8 +448,8 @@ staMacShort = staMacText.substring(9);
       provisionInfo.valid = false;
       staConnected = false;
       wifiStatusText = "WiFi:FAIL";
-  break;
-}
+      break;
+    }
   }
 
   if (WiFi.status() == WL_CONNECTED) {
