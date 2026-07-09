@@ -100,7 +100,7 @@ String buildProvisioningPage() {
   //text input for passcode
   page += "Passcode: <input type=\"password\" name=\"passcode\"><br>";
   //text input for GSID
-  page += "GSID: <input type=\"text\" name=\"GSID\"><br>";
+  page += "GSID: <input type=\"text\" name=\"GSID\" placeholder=\"leave blank to reuse saved\"><br>"; // keeps old GSID if not filled in by user
   //adds a submit button
   page += "<input type=\"submit\" value=\"Submit\">";
   page += "</form></body></html>";
@@ -118,20 +118,32 @@ String buildProvisioningSuccessPage(const String& ssid, const String& gsid) {
 }
 // Shared provisioning save path used by both HTTP and HTTPS handlers to prevent the two setup routes from drifting apart.
 void applyProvisioningInfo(const String& ssid, const String& pass, const String& gsid) {
+  // Preserve the previous Google Script ID when the GSID field is left blank
+  char savedGsid[sizeof(provisionInfo.gsid)];
+  strlcpy(savedGsid, provisionInfo.gsid, sizeof(savedGsid));
+
+  String cleanedGsid = gsid;
+  cleanedGsid.trim();
+
   memset(&provisionInfo, 0, sizeof(provisionInfo));
 
   strlcpy(provisionInfo.ssid, ssid.c_str(), sizeof(provisionInfo.ssid));
   strlcpy(provisionInfo.passcode, pass.c_str(), sizeof(provisionInfo.passcode));
-  strlcpy(provisionInfo.gsid, gsid.c_str(), sizeof(provisionInfo.gsid));
+
+  if (cleanedGsid.length() > 0) {
+    // Blank GSID means reuse the last saved value
+    strlcpy(provisionInfo.gsid, cleanedGsid.c_str(), sizeof(provisionInfo.gsid));
+  } else {
+    strlcpy(provisionInfo.gsid, savedGsid, sizeof(provisionInfo.gsid));
+  }
 
   Serial.println("\nProvisioning received:");
   Serial.print("  SSID: ");
   Serial.println(provisionInfo.ssid);
-  // Do not print the WiFi password itself; length confirms something was entered.
   Serial.print("  PASS length: ");
   Serial.println(strlen(provisionInfo.passcode));
   Serial.print("  GSID: ");
-  Serial.println(provisionInfo.gsid);
+  Serial.println(strlen(provisionInfo.gsid) > 0 ? "present" : "missing");
 
   provisionInfo.valid = true;
   provisionInfo.WiFiPresent = true;
