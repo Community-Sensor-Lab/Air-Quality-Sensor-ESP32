@@ -101,8 +101,10 @@ String buildProvisioningPage() {
   //text input for GSID
   page += "GSID: <input type=\"text\" name=\"GSID\" placeholder=\"leave blank to reuse saved\"><br>";  // keeps old GSID if not filled in by user
   //adds a submit button
-  page += "<input type=\"submit\" value=\"Submit\">";
-  page += "</form></body></html>";
+ page += "<input type=\"submit\" value=\"Submit\">";
+ page += "</form>";
+ page += "<p><a href=\"/status\">View device status</a></p>";
+ page += "</body></html>";
   return page;
 }
 // Build the confirmation page shared by HTTP and HTTPS after credentials submit.
@@ -112,8 +114,60 @@ String buildProvisioningSuccessPage(const String &ssid, const String &gsid) {
   resp += "<p><b>SSID:</b> " + ssid + "</p>";
   resp += "<p><b>GSID:</b> " + gsid + "</p>";
   resp += "<p>You can now close this page.</p>";
+  resp += "<p><a href=\"/status\">View device status</a></p>";
   resp += "</body></html>";
   return resp;
+}
+// builds a read only webpage with device, wifi, google, and sensor status
+String buildStatusPage() {
+  String page = "<!DOCTYPE html><html><head>";
+  page += "<title>AQS Status</title>";
+  page += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">";
+  page += "<meta http-equiv=\"refresh\" content=\"" + String(SAMPLE_INTERVAL_MS / 1000) + "\">";
+  page += "<style>";
+  page += "body{font-family:Arial,sans-serif;margin:20px;line-height:1.4;}";
+  page += "table{border-collapse:collapse;width:100%;max-width:520px;}";
+  page += "td{border-bottom:1px solid #ddd;padding:6px;}";
+  page += "td:first-child{font-weight:bold;width:45%;}";
+  page += "</style>";
+  page += "</head><body>";
+
+  page += "<h2>Air Quality Sensor Status</h2>";
+  page += "<table>";
+
+  page += "<tr><td>Device MAC</td><td>" + FullmacStr + "</td></tr>";
+  page += "<tr><td>AP SSID</td><td>" + mac_ssid + "</td></tr>";
+  page += "<tr><td>AP IP</td><td>" + apIpText + "</td></tr>";
+  page += "<tr><td>STA IP</td><td>" + staIpText + "</td></tr>";
+  page += "<tr><td>WiFi SSID</td><td>" + String(provisionInfo.ssid) + "</td></tr>";
+  page += "<tr><td>WiFi RSSI</td><td>" + String(lastWifiRssi) + " dBm</td></tr>";
+  page += "<tr><td>WiFi Status</td><td>" + wifiStatusText + "</td></tr>";
+  page += "<tr><td>Google Status</td><td>" + googleStatusText + "</td></tr>";
+    page += "<tr><td>GSID</td><td>";
+  page += strlen(provisionInfo.gsid) > 0 ? "present" : "missing";
+  page += "</td></tr>";
+
+  page += "<tr><td>PM2.5</td><td>" + String(sensorData.mPm2_5, 1) + " ug/m3</td></tr>";
+  page += "<tr><td>CO2</td><td>" + String(sensorData.CO2) + " ppm</td></tr>";
+  page += "<tr><td>Temperature</td><td>" + String(sensorData.Tbme, 1) + " C</td></tr>";
+  page += "<tr><td>Humidity</td><td>" + String(sensorData.RHbme, 0) + " %</td></tr>";
+  page += "<tr><td>Battery</td><td>" + String(sensorData.Vbat, 2) + " V</td></tr>";
+  page += "<tr><td>Sample Interval</td><td>" + String(SAMPLE_INTERVAL_MS / 1000) + " sec</td></tr>";
+  page += "<tr><td>Uptime</td><td>" + String(millis() / 1000) + " sec</td></tr>";
+
+  page += "</table>";
+  page += "<p><a href=\"/\">Provisioning page</a></p>";
+  page += "</body></html>";
+
+  return page;
+}
+
+// Serve current device status without changing provisioning settings.
+void handleStatus() {
+  Serial.println("handleStatus");
+
+  String page = buildStatusPage();
+  server.send(200, "text/html", page);
 }
 // Shared provisioning save path used by both HTTP and HTTPS handlers to prevent the two setup routes from drifting apart.
 void applyProvisioningInfo(const String &ssid, const String &pass, const String &gsid) {
@@ -329,10 +383,12 @@ void softAPprovision() {
   }
   display.display();
 
-  // Web routes
-  server.on("/", HTTP_GET, handleRoot);
-  server.on("/get", HTTP_GET, handleGet);
-  server.onNotFound(handleNotFound);
+// Web routes
+server.on("/", HTTP_GET, handleRoot);
+server.on("/get", HTTP_GET, handleGet);
+// Status route works from the ESP32 AP IP and the router-assigned STA IP.
+server.on("/status", HTTP_GET, handleStatus);
+server.onNotFound(handleNotFound);
 
   server.begin();
   Serial.println("✅ HTTP server started (port 80)");
