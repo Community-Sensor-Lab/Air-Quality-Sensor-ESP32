@@ -16,8 +16,11 @@
 #define BUTTON_A 15         // for the adafruit Feather ESP32 v2 (ABC, 15 32 14) Oled button also A7 enable pullup to read button
 #define BUTTON_B 32         // for the adafruit Feather ESP32 v2 (ABC, 15 32 14) Oled button also A7 enable pullup to read button
 #define WIFI_TIMEOUT 10000  // how long to wait for connection in ms
-// Sampling interval controls how often sensor rows are logged and uploaded
-#define SAMPLE_INTERVAL_MS 60000UL
+// Timing is split so sampling, WiFi upload, and later cellular upload can run separately
+#define DEFAULT_SAMPLE_INTERVAL_MS 60000UL
+// Cellular uploads are spaced farther apart to reduce power draw
+#define DEFAULT_WIFI_UPLOAD_INTERVAL_MS 60000UL
+#define DEFAULT_CELL_UPLOAD_INTERVAL_MS 300000UL
 //#define SD_CS 10    // Chip select for SD card default for Adalogger
 
 // Shared AP, STA, and Google upload status fields for OLED/debug display.
@@ -36,8 +39,25 @@ String apMacShort = "";
 int lastWifiRssi = 0;
 bool apActive = false;
 bool staConnected = false;
+unsigned long sampleIntervalMs = DEFAULT_SAMPLE_INTERVAL_MS;
+unsigned long wifiUploadIntervalMs = DEFAULT_WIFI_UPLOAD_INTERVAL_MS;
+unsigned long cellUploadIntervalMs = DEFAULT_CELL_UPLOAD_INTERVAL_MS;
+
 unsigned long lastSampleMs = 0;
+unsigned long lastWifiUploadMs = 0;
+unsigned long lastCellUploadMs = 0;
+
 bool firstSample = true;
+bool firstWifiUpload = true;
+bool firstCellUpload = true;
+
+// Location fields stay blank until the nRF9151 provides GNSS data
+String sampleModeText = "STATIONARY";
+String latestLatText = "";
+String latestLonText = "";
+String latestGpsAgeText = "";
+String latestGpsAccuracyText = "";
+String latestFixValidText = "false";
 /* STRUCT TO STORE ALL SENSOR DATA */
 typedef struct {
   DateTime now;
@@ -77,8 +97,7 @@ static String mac_ssid;
 String FullmacStr = "";
 
 // the title of the columns
-#define HEADER "DateTime, Tbme, Pbme, RHbme, CO2, Tco2, RHco2, mPm1.0, mPm2.5, mPm4.0, mPm10, cPm0.5, cPm1.0, cPm2.5, cPm4.0, cPm10, cPm tSize, RHsen, Tsen, VOCs, NOx, Vbat, ID (Mac Address), WiFi, WiFi rssi (dBm), WiFi Quality"
-
+#define HEADER "DateTime, Tbme, Pbme, RHbme, CO2, Tco2, RHco2, mPm1.0, mPm2.5, mPm4.0, mPm10, cPm0.5, cPm1.0, cPm2.5, cPm4.0, cPm10, cPm tSize, RHsen, Tsen, VOCs, NOx, Vbat, ID (Mac Address), WiFi, WiFi rssi (dBm), WiFi Quality, Lat, Lon, GPS Age Sec, GPS Accuracy m, Fix Valid, Upload Method, Sample Mode, Sample Interval Sec"
 // large Oled display
 Adafruit_SH1107 display = Adafruit_SH1107(64, 128, &Wire);
 

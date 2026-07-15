@@ -101,10 +101,10 @@ String buildProvisioningPage() {
   //text input for GSID
   page += "GSID: <input type=\"text\" name=\"GSID\" placeholder=\"leave blank to reuse saved\"><br>";  // keeps old GSID if not filled in by user
   //adds a submit button
- page += "<input type=\"submit\" value=\"Submit\">";
- page += "</form>";
- page += "<p><a href=\"/status\">View device status</a></p>";
- page += "</body></html>";
+  page += "<input type=\"submit\" value=\"Submit\">";
+  page += "</form>";
+  page += "<p><a href=\"/status\">View device status</a></p>";
+  page += "</body></html>";
   return page;
 }
 // Build the confirmation page shared by HTTP and HTTPS after credentials submit.
@@ -123,7 +123,8 @@ String buildStatusPage() {
   String page = "<!DOCTYPE html><html><head>";
   page += "<title>AQS Status</title>";
   page += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">";
-  page += "<meta http-equiv=\"refresh\" content=\"" + String(SAMPLE_INTERVAL_MS / 1000) + "\">";
+  // Refresh the status page when a new sample should be available
+  page += "<meta http-equiv=\"refresh\" content=\"" + String(sampleIntervalMs / 1000) + "\">";
   page += "<style>";
   page += "body{font-family:Arial,sans-serif;margin:20px;line-height:1.4;}";
   page += "table{border-collapse:collapse;width:100%;max-width:520px;}";
@@ -143,7 +144,7 @@ String buildStatusPage() {
   page += "<tr><td>WiFi RSSI</td><td>" + String(lastWifiRssi) + " dBm</td></tr>";
   page += "<tr><td>WiFi Status</td><td>" + wifiStatusText + "</td></tr>";
   page += "<tr><td>Google Status</td><td>" + googleStatusText + "</td></tr>";
-    page += "<tr><td>GSID</td><td>";
+  page += "<tr><td>GSID</td><td>";
   page += strlen(provisionInfo.gsid) > 0 ? "present" : "missing";
   page += "</td></tr>";
 
@@ -152,7 +153,13 @@ String buildStatusPage() {
   page += "<tr><td>Temperature</td><td>" + String(sensorData.Tbme, 1) + " C</td></tr>";
   page += "<tr><td>Humidity</td><td>" + String(sensorData.RHbme, 0) + " %</td></tr>";
   page += "<tr><td>Battery</td><td>" + String(sensorData.Vbat, 2) + " V</td></tr>";
-  page += "<tr><td>Sample Interval</td><td>" + String(SAMPLE_INTERVAL_MS / 1000) + " sec</td></tr>";
+  page += "<tr><td>Sample Mode</td><td>" + sampleModeText + "</td></tr>";
+  page += "<tr><td>Sample Interval</td><td>" + String(sampleIntervalMs / 1000) + " sec</td></tr>";
+  page += "<tr><td>WiFi Upload Interval</td><td>" + String(wifiUploadIntervalMs / 1000) + " sec</td></tr>";
+  page += "<tr><td>Cell Upload Interval</td><td>" + String(cellUploadIntervalMs / 1000) + " sec</td></tr>";
+  page += "<tr><td>GPS Fix</td><td>" + latestFixValidText + "</td></tr>";
+  page += "<tr><td>Lat</td><td>" + latestLatText + "</td></tr>";
+  page += "<tr><td>Lon</td><td>" + latestLonText + "</td></tr>";
   page += "<tr><td>Uptime</td><td>" + String(millis() / 1000) + " sec</td></tr>";
 
   page += "</table>";
@@ -383,12 +390,12 @@ void softAPprovision() {
   }
   display.display();
 
-// Web routes
-server.on("/", HTTP_GET, handleRoot);
-server.on("/get", HTTP_GET, handleGet);
-// Status route works from the ESP32 AP IP and the router-assigned STA IP.
-server.on("/status", HTTP_GET, handleStatus);
-server.onNotFound(handleNotFound);
+  // Web routes
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/get", HTTP_GET, handleGet);
+  // Status route works from the ESP32 AP IP and the router-assigned STA IP.
+  server.on("/status", HTTP_GET, handleStatus);
+  server.onNotFound(handleNotFound);
 
   server.begin();
   Serial.println("✅ HTTP server started (port 80)");

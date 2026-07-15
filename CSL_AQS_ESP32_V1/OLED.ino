@@ -49,7 +49,7 @@ void displaySensorStatus() {
 
   display.printf("STA:%s %d\n", staIpText.c_str(), lastWifiRssi);
   display.printf("AP:%s\n", apActive ? apIpText.c_str() : "off");
-  display.printf("%s\n", googleStatusText.c_str());
+  display.printf("%s %lus\n", googleStatusText.c_str(), sampleIntervalMs / 1000);
   display.printf("M:%s\n", staMacShort.c_str());
 
   display.display();

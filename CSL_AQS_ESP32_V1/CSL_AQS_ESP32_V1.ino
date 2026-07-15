@@ -108,7 +108,7 @@ void loop() {
     return;
   }
   // Keep loop responsive between samples so the phone web page can be served
-  if (!firstSample && millis() - lastSampleMs < SAMPLE_INTERVAL_MS) {
+  if (!firstSample && millis() - lastSampleMs < sampleIntervalMs) {
     return;
   }
 
@@ -146,8 +146,12 @@ void loop() {
   char tstring[128];
   sprintf(tstring, "%02u/%02u/%02u %02u:%02u:%02u, ", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
 
-  String outString = String(tstring) + bme + scd41 + sen55 + String(sensorData.Vbat) + "," + FullmacStr + "," + String(provisionInfo.ssid) + "," + wifi_rssi + "," + rssi_quality;
+  // WiFi upload runs on its own timer so faster sampling does not force faster uploads
+  bool wifiUploadDue = WiFi.status() == WL_CONNECTED && (firstWifiUpload || millis() - lastWifiUploadMs >= wifiUploadIntervalMs);
+  String uploadMethodText = wifiUploadDue ? "wifi" : "sd";
 
+  // Add placeholder location and mode fields to keep the data format ready for cellular/GNSS
+  String outString = String(tstring) + bme + scd41 + sen55 + String(sensorData.Vbat) + "," + FullmacStr + "," + String(provisionInfo.ssid) + "," + wifi_rssi + "," + rssi_quality + "," + latestLatText + "," + latestLonText + "," + latestGpsAgeText + "," + latestGpsAccuracyText + "," + latestFixValidText + "," + uploadMethodText + "," + sampleModeText + "," + String(sampleIntervalMs / 1000);
   Serial.println(HEADER);
   Serial.println(outString);
 
@@ -156,7 +160,10 @@ void loop() {
 
   displaySensorStatus();
 
-  if (WiFi.status() == WL_CONNECTED) {
+  if (wifiUploadDue) {
+    firstWifiUpload = false;
+    lastWifiUploadMs = millis();
+
     if (doPost(PRE_PAYLOAD_APPEND_ROW + outString)) {
       Serial.println("[POST] Row upload complete");
     } else {
