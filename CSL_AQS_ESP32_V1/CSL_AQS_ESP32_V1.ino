@@ -162,7 +162,7 @@ void loop() {
 
   if (wifiUploadDue) {
     firstWifiUpload = false;
-    lastWifiUploadMs = millis();
+    lastWifiUploadMs = lastSampleMs;
 
     if (doPost(PRE_PAYLOAD_APPEND_ROW + outString)) {
       Serial.println("[POST] Row upload complete");
