@@ -43,7 +43,19 @@ void setup() {
   provisioningFromEEPROM();  // get EEPROM info
   uint32_t mac_reversed = (uint32_t)(ESP.getEfuseMac() >> 24) & 0xFFFFFF;
   uint32_t mac_original = ((mac_reversed & 0xFF) << 16) | ((mac_reversed & 0xFF00)) | ((mac_reversed & 0xFF0000) >> 16);
+
   mac_ssid = "csl-" + String(mac_original, HEX);
+  // Set device ID before WiFi so SD-only logs still include the MAC address
+  uint64_t mac = ESP.getEfuseMac();
+  char macBuf[20];
+  sprintf(macBuf, "%02x:%02x:%02x:%02x:%02x:%02x",
+          (uint8_t)(mac)&0xFF,
+          (uint8_t)(mac >> 8) & 0xFF,
+          (uint8_t)(mac >> 16) & 0xFF,
+          (uint8_t)(mac >> 24) & 0xFF,
+          (uint8_t)(mac >> 32) & 0xFF,
+          (uint8_t)(mac >> 40) & 0xFF);
+  FullmacStr = String(macBuf);
 
   Serial.printf("10s to decide\n");
   unsigned long ts = millis();
@@ -100,12 +112,12 @@ void loop() {
     softAPprovision();
     connectToWiFi();
   }
-
+  // No WiFi should stop uploads, not local SD logging
   if (!provisionInfo.WiFiPresent) {
-    Serial.println("No WiFi");
-    display.println("No WiFi");
-    display.display();
-    return;
+    staConnected = false;
+    wifiStatusText = "WiFi:OFF";
+    staIpText = "";
+    lastWifiRssi = 0;
   }
   // Keep loop responsive between samples so the phone web page can be served
   if (!firstSample && millis() - lastSampleMs < sampleIntervalMs) {
@@ -149,9 +161,11 @@ void loop() {
   // WiFi upload runs on its own timer so faster sampling does not force faster uploads
   bool wifiUploadDue = WiFi.status() == WL_CONNECTED && (firstWifiUpload || millis() - lastWifiUploadMs >= wifiUploadIntervalMs);
   String uploadMethodText = wifiUploadDue ? "wifi" : "sd";
+  String wifiNameText = provisionInfo.WiFiPresent ? String(provisionInfo.ssid) : "No WiFi";
 
+  // Log the active WiFi state instead of a stale saved SSID
   // Add placeholder location and mode fields to keep the data format ready for cellular/GNSS
-  String outString = String(tstring) + bme + scd41 + sen55 + String(sensorData.Vbat) + "," + FullmacStr + "," + String(provisionInfo.ssid) + "," + wifi_rssi + "," + rssi_quality + "," + latestLatText + "," + latestLonText + "," + latestGpsAgeText + "," + latestGpsAccuracyText + "," + latestFixValidText + "," + uploadMethodText + "," + sampleModeText + "," + String(sampleIntervalMs / 1000);
+  String outString = String(tstring) + bme + scd41 + sen55 + String(sensorData.Vbat) + "," + FullmacStr + "," + wifiNameText + "," + wifi_rssi + "," + rssi_quality + "," + latestLatText + "," + latestLonText + "," + latestGpsAgeText + "," + latestGpsAccuracyText + "," + latestFixValidText + "," + uploadMethodText + "," + sampleModeText + "," + String(sampleIntervalMs / 1000);
   Serial.println(HEADER);
   Serial.println(outString);
 
