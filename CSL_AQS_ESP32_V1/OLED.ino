@@ -27,6 +27,9 @@ void initializeOLED() {
 
   pinMode(BUTTON_B, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(BUTTON_B), buttonB, CHANGE);
+
+  pinMode(BUTTON_C, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_C), buttonC, FALLING);
 }
 
 //Interrupt Handlers
@@ -37,6 +40,42 @@ void buttonA() {
 void buttonB() {
   provisionInfo.WiFiPresent = false;
 }
+
+void buttonC() {
+  buttonCPressed = true;
+}
+
+void handleButtonC() {
+  if (!buttonCPressed) return;
+
+  buttonCPressed = false;
+
+  if (millis() - lastButtonCHandledMs < BUTTON_DEBOUNCE_MS) return;
+  lastButtonCHandledMs = millis();
+
+  sampleModeIndex = (sampleModeIndex + 1) % 3;
+  applySampleMode();
+
+  Serial.printf("[MODE] %s every %lu seconds\n", sampleModeText.c_str(), sampleIntervalMs / 1000);
+  displaySensorStatus();
+}
+
+void applySampleMode() {
+  if (sampleModeIndex == 0) {
+    sampleModeText = "STATIONARY";
+    sampleIntervalMs = 60000UL;
+  } else if (sampleModeIndex == 1) {
+    sampleModeText = "MOBILE";
+    sampleIntervalMs = 30000UL;
+  } else {
+    sampleModeText = "FOCUS";
+    sampleIntervalMs = 20000UL;
+  }
+
+  wifiUploadIntervalMs = sampleIntervalMs;
+  firstWifiUpload = true;
+}
+
 // Draw the normal field screen with sensor, network, and upload status
 void displaySensorStatus() {
   display.clearDisplay();
@@ -50,7 +89,7 @@ void displaySensorStatus() {
   display.printf("STA:%s %d\n", staIpText.c_str(), lastWifiRssi);
   display.printf("AP:%s\n", apActive ? apIpText.c_str() : "off");
   display.printf("%s %lus\n", googleStatusText.c_str(), sampleIntervalMs / 1000);
-  display.printf("M:%s\n", staMacShort.c_str());
+  display.printf("%s M:%s\n", sampleModeText.c_str(), staMacShort.c_str());
 
   display.display();
 }

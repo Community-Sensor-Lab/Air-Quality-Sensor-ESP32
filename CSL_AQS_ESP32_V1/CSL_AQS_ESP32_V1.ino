@@ -21,6 +21,8 @@ void setup() {
   Serial.begin(115200);
   delay(5000);
   Serial.println(__FILE__);
+  // Start the nRF9151 GNSS UART connection
+  initializeNrfUart();
 
   initializeSD();     // initializeSD has to come before initializeOLED or it'll crash
   initializeOLED();   // display
@@ -106,6 +108,11 @@ void setup() {
 }
 
 void loop() {
+  // Keep GNSS reception active between sensor samples
+  serviceNrfUart();
+  refreshGpsFields();
+  handleButtonC();
+
   server.handleClient();
 
   if (!provisionInfo.valid && provisionInfo.WiFiPresent) {
@@ -130,6 +137,10 @@ void loop() {
   String bme = readBME();
   String sen55 = readSEN55();
   String scd41 = readSCD41();
+
+  // Refresh location immediately before building this sensor row
+  serviceNrfUart();
+  refreshGpsFields();
   DateTime now = rtc.now();
 
   int wifi_rssi = 0;

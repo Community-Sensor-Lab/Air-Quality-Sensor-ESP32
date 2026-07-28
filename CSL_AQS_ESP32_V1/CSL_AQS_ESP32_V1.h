@@ -15,12 +15,19 @@
 #define VBATPIN A13         // this is also D9 button A disable pullup to read analog
 #define BUTTON_A 15         // for the adafruit Feather ESP32 v2 (ABC, 15 32 14) Oled button also A7 enable pullup to read button
 #define BUTTON_B 32         // for the adafruit Feather ESP32 v2 (ABC, 15 32 14) Oled button also A7 enable pullup to read button
+#define BUTTON_C 14         // button C cycles sample modes
 #define WIFI_TIMEOUT 10000  // how long to wait for connection in ms
 // Timing is split so sampling, WiFi upload, and later cellular upload can run separately
 #define DEFAULT_SAMPLE_INTERVAL_MS 60000UL
 // Cellular uploads are spaced farther apart to reduce power draw
 #define DEFAULT_WIFI_UPLOAD_INTERVAL_MS 60000UL
 #define DEFAULT_CELL_UPLOAD_INTERVAL_MS 300000UL
+
+// nRF9151 UART and stale GPS timing settings
+#define NRF_UART_BAUD 115200
+#define NRF_RX_PIN 7
+#define GPS_FIX_STALE_MS 30000UL
+
 //#define SD_CS 10    // Chip select for SD card default for Adalogger
 
 // Shared AP, STA, and Google upload status fields for OLED/debug display.
@@ -51,6 +58,11 @@ bool firstSample = true;
 bool firstWifiUpload = true;
 bool firstCellUpload = true;
 
+volatile bool buttonCPressed = false;
+unsigned long lastButtonCHandledMs = 0;
+const unsigned long BUTTON_DEBOUNCE_MS = 250;
+int sampleModeIndex = 0;
+
 // Location fields stay blank until the nRF9151 provides GNSS data
 String sampleModeText = "STATIONARY";
 String latestLatText = "";
@@ -58,6 +70,13 @@ String latestLonText = "";
 String latestGpsAgeText = "";
 String latestGpsAccuracyText = "";
 String latestFixValidText = "false";
+
+// Latest GNSS fix received from the nRF9151
+String latestGpsUtcText = "";
+unsigned long latestGpsFixMs = 0;
+bool gpsHasValidFix = false;
+bool gpsCurrentFixValid = false;
+
 /* STRUCT TO STORE ALL SENSOR DATA */
 typedef struct {
   DateTime now;
@@ -163,6 +182,15 @@ static const char provisioningPage[] = R"===(
 </body></html>
 )===";
 */
+
+// nRF9151 UART functions
+void initializeNrfUart();
+void serviceNrfUart();
+void refreshGpsFields();
+
 void syncRTCFromNTP();
 void displaySensorStatus();
+void handleButtonC();
+void applySampleMode();
+
 #endif
