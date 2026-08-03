@@ -64,7 +64,7 @@ void setup() {
   while (!provisionInfo.valid && provisionInfo.WiFiPresent) {  // ENTER IF A PRESSED OR PROVISION NOT VALID
 
     uint32_t mac_reversed = (uint32_t)(ESP.getEfuseMac() >> 24) & 0xFFFFFF;
-    uint32_t mac_original = ((mac_reversed & 0xFF) << 16) | ((mac_reversed & 0xFF00)) | ((mac_reversed & 0xFF0000) >> 16); //Shift addresses to correct positions
+    uint32_t mac_original = ((mac_reversed & 0xFF) << 16) | ((mac_reversed & 0xFF00)) | ((mac_reversed & 0xFF0000) >> 16);  //Shift addresses to correct positions
 
     mac_ssid = "csl-" + String(mac_original, HEX);
     // mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() >> 24) & 0xFFFFFF, HEX);
@@ -82,10 +82,10 @@ void setup() {
     display.display();
   }
   if (WiFi.status() == WL_CONNECTED) {
-  syncRTCFromNTP();
+    syncRTCFromNTP();
 
-  initializeClient();
-  Serial.println("*** Adding header to google sheet. ");
+    initializeClient();
+    Serial.println("*** Adding header to google sheet. ");
     doPost(PRE_PAYLOAD_ADD_HEADER HEADER);
     Serial.println("\n*** Done adding header to google sheet");
     delay(5000);
