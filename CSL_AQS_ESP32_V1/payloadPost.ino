@@ -12,8 +12,6 @@
 #define POST_PAYLOAD "\"}"
 #define SERVER "script.google.com"  // Server URL
 
-// google
-const char* test_root_ca = R"string_literal(
 // -----BEGIN CERTIFICATE(Old/Previous)-----
 // MIIFVzCCAz+gAwIBAgINAgPlk28xsBNJiGuiFzANBgkqhkiG9w0BAQwFADBHMQsw
 // CQYDVQQGEwJVUzEiMCAGA1UEChMZR29vZ2xlIFRydXN0IFNlcnZpY2VzIExMQzEU
@@ -46,6 +44,9 @@ const char* test_root_ca = R"string_literal(
 // bP6MvPJwNQzcmRk13NfIRmPVNnGuV/u3gm3c
 // -----END CERTIFICATE-----
 
+
+const char* test_root_ca = R"string_literal(
+
 -----BEGIN CERTIFICATE-----
 MIICCTCCAY6gAwIBAgINAgPlwGjvYxqccpBQUjAKBggqhkjOPQQDAzBHMQswCQYD
 VQQGEwJVUzEiMCAGA1UEChMZR29vZ2xlIFRydXN0IFNlcnZpY2VzIExMQzEUMBIG
@@ -59,7 +60,6 @@ BBSATNbrdP9JNqPV2Py1PsVq8JQdjDAKBggqhkjOPQQDAwNpADBmAjEA6ED/g94D
 9J+uHXqnLrmvT/aDHQ4thQEd0dlq7A/Cr8deVl5c1RxYIigL9zC2L7F8AjEA8GE8
 p/SgguMh1YQdc4acLa/KNJvxn7kjNuK8YAOdgLOaVsjh4rsUecrNIdSUtUlD
 -----END CERTIFICATE-----
-
 
 )string_literal";
 
