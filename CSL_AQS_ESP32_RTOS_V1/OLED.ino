@@ -1,19 +1,19 @@
+#include "CSL_AQS_ESP32_RTOS_V1.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>  // OLED library
-#include "CSL_AQS_ESP32_V1.h"
 
 void initializeOLED()  {
   // Large Oled display
   Adafruit_SH1107 display = Adafruit_SH1107(64, 128, &Wire);
 
-  Serial.print("Starting OLED...\t\t");
+  safePrintf("Starting OLED...\t\t");
   if (!display.begin(0x3C, true)) // Address 0x3C for 128x32
-    Serial.println(F("SH110X  allocation failed"));
+    safePrintf("SH110X  allocation failed");
   else  {
-    Serial.println("OLED ok");
+    safePrintf("OLED ok");
     display.display();
     display.setRotation(1);
-    //    Serial.println("Button test");
+    //    safePrintfln("Button test");
     pinMode(BUTTON_A, INPUT_PULLUP);
     // text display tests
     display.clearDisplay();

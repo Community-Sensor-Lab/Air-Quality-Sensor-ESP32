@@ -1,3 +1,4 @@
+#include "CSL_AQS_ESP32_RTOS_V1.h"
 /* BME280 TEMP, PRESS, RH BOARD FROM ADAFRUIT USING 'Adafruit_BME280.h' */
 
 void initializeBME(Adafruit_BME280& bme280) {
@@ -5,11 +6,11 @@ void initializeBME(Adafruit_BME280& bme280) {
   // You can also pass in a Wire library object like &Wire2
   // bmeStatus = bme.begin(0x76, &Wire2)
   if (!bme280.begin()) {
-    Serial.println("BME280 not detected");
+    safePrintf("BME280 not detected");
     //display.println("BME280 not detected");
     //display.display();
   } else {
-    Serial.println("BME280 connected");
+    safePrintf("BME280 connected");
     //display.println("BME280 connected");
     //display.display();
   }
@@ -28,16 +29,16 @@ void initializeSCD41(SCD4x& scd41) {
   //mySensor.enableDebugging(); // Uncomment this line to get helpful debug messages on Serial
   if (scd41.begin(false, false, false) == false)  // measBegin, autoCal, skipStopPeriodicMeasurements i.e. Do not start periodic measurements
   {
-    Serial.println("SCD41 sensor not detected");
+    safePrintf("SCD41 sensor not detected");
     //display.println("SCD41 sensor not detected");
     //display.display();
   }
   if (!scd41.measureSingleShot()) {
-    Serial.println("SCD41 measureSingleShot failed");
+    safePrintf("SCD41 measureSingleShot failed");
    // display.println("SCD41 measureSingleShot failed");
    // display.display();
   } else
-    Serial.println("SCD41 connected");
+    safePrintf("SCD41 connected");
   //display.println("SCD41 connected");
   //display.display();
 }
@@ -49,7 +50,6 @@ void readSCD41(SCD4x& scd41, data &reading) {
     Serial.print("+");
     delay(500);
   }
-  Serial.println();
   reading.CO2 = scd41.getCO2();
   reading.Tco2 = scd41.getTemperature();
   reading.RHco2 = scd41.getHumidity();
@@ -74,7 +74,7 @@ void initializeSEN55(SensirionI2CSen5x& sen55) {
   if (error) {
     Serial.print("Error trying to execute deviceReset(): ");
     errorToString(error, errorMessage, 256);
-    Serial.println(errorMessage);
+    safePrintf(errorMessage);
   }
 
   float tempOffset = 0.0;
@@ -82,17 +82,17 @@ void initializeSEN55(SensirionI2CSen5x& sen55) {
   if (error) {
     Serial.print("Error trying to execute setTemperatureOffsetSimple(): ");
     errorToString(error, errorMessage, 256);
-    Serial.println(errorMessage);
+    safePrintf(errorMessage);
   } else {
-    //Serial.printf("T offset %.2f C...\t", tempOffset);
+    //safePrintf("T offset %.2f C...\t", tempOffset);
   }
   error = sen55.startMeasurement();
   if (error) {
     Serial.print("Error trying to execute startMeasurement(): ");
     errorToString(error, errorMessage, 256);
-    Serial.println(errorMessage);
+    safePrintf(errorMessage);
   } else {
-    Serial.println("SEN55 connected");
+    safePrintf("SEN55 connected");
     //display.println("SEN55 connected");
     //display.display();
   }
@@ -116,7 +116,7 @@ void readSEN55(SensirionI2CSen5x& sen55,data &reading) {
   if (error) {
     Serial.print("Error trying to execute readMeasuredValues(): ");
     errorToString(error, errorMessage, 256);
-    Serial.println(errorMessage);
+    safePrintf(errorMessage);
   }
 
   error = sen55.readMeasuredPmValues( 
@@ -134,7 +134,7 @@ void readSEN55(SensirionI2CSen5x& sen55,data &reading) {
   if (error) {
     Serial.print("Error trying to execute readMeasuredPmValues(): ");
     errorToString(error, errorMessage, 256);
-    Serial.println(errorMessage);
+    safePrintf(errorMessage);
   }
  
 }
@@ -148,7 +148,7 @@ float getRandomVoltage() {
 }
 
 void readSensorsAndRTC(void *pvParameters){
-  Serial.println("Calling Read SensorAndRTC");
+  safePrintf("Calling Read SensorAndRTC");
   //--- Initialize RTC ----
 
   RTC_PCF8523 rtc; 
@@ -157,18 +157,18 @@ void readSensorsAndRTC(void *pvParameters){
   
   Wire.begin();  // connect to RTC
   if (!rtc.begin()) {
-    Serial.println("RTC failed");
+    safePrintf("RTC failed");
     //display.println("RTC failed");
     //display.display();
   } else {
-    Serial.println("RTC connected");
+    safePrintf("RTC connected");
     //display.println("RTC connected");
     
     DateTime now= rtc.now(); //UPDATE JULY 29
 
     char tstring[128];
     sprintf(tstring, "%02u/%02u/%02u %02u:%02u:%02u", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
-    Serial.printf("Date time...\t\t\t%s\n",tstring);
+    safePrintf("Date time...\t\t\t%s\n",tstring);
     //display.println(tstring);
     //display.display();
   }
@@ -179,10 +179,10 @@ void readSensorsAndRTC(void *pvParameters){
   DateTime now;
 
   if(TESTING_MODE){
-    Serial.println("\ninitializeBME();\ninitializeSCD41();\ninitializeSEN55();\ninitializeRTC()\n");
+    safePrintf("\ninitializeBME();\ninitializeSCD41();\ninitializeSEN55();\ninitializeRTC()\n");
     
     while(1) {
-        Serial.println("Sensor Task running...");
+        safePrintf("Sensor Task running...");
 
       // Datetime
       data sensorData;
@@ -211,9 +211,9 @@ void readSensorsAndRTC(void *pvParameters){
       sensorData.VOCs = getRandomVoltage();
       sensorData.NOx = getRandomVoltage();
       
-      if (xQueueSend(wclientQueue, & sensorData, pdMS_TO_TICKS(0)) != pdPASS) Serial.println("wifi client queue full! Dropping sample");
+      if (xQueueSend(wclientQueue, & sensorData, pdMS_TO_TICKS(0)) != pdPASS) safePrintf("wifi client queue full! Dropping sample");
       
-      if (xQueueSend(sdQueue, & sensorData, pdMS_TO_TICKS(0)) != pdPASS)  Serial.println("sd queue full! Dropping sample");
+      if (xQueueSend(sdQueue, & sensorData, pdMS_TO_TICKS(0)) != pdPASS)  safePrintf("sd queue full! Dropping sample");
       
        vTaskDelay(pdMS_TO_TICKS(2000)); 
     }
@@ -236,8 +236,8 @@ void readSensorsAndRTC(void *pvParameters){
       readSEN55(sen55,sensorData);
       readSCD41(scd41,sensorData);
 
-      if (xQueueSend(wclientQueue, &sensorData, pdMS_TO_TICKS(0)) != pdPASS) Serial.println("wifi client queue full! Dropping sample");
-      if (xQueueSend(sdQueue, & sensorData, pdMS_TO_TICKS(0)) != pdPASS) Serial.println("sd queue full! Dropping sample");
+      if (xQueueSend(wclientQueue, &sensorData, pdMS_TO_TICKS(0)) != pdPASS) safePrintf("wifi client queue full! Dropping sample");
+      if (xQueueSend(sdQueue, & sensorData, pdMS_TO_TICKS(0)) != pdPASS) safePrintf("sd queue full! Dropping sample");
     
       vTaskDelay(pdMS_TO_TICKS(2000)); 
     }
@@ -248,18 +248,18 @@ void readSensorsAndRTC(void *pvParameters){
 
 void syncRTCFromNTP(RTC_PCF8523 &rtc) {
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Skipping RTC sync: WiFi not connected");
+    safePrintf("Skipping RTC sync: WiFi not connected");
     return;
   }
 
-  Serial.println("Syncing RTC from NTP...");
+  safePrintf("Syncing RTC from NTP...");
 
   //configTime(-5 * 3600, 0, "pool.ntp.org", "time.nist.gov");
   configTime(-5 * 3600, 3600, "pool.ntp.org", "time.nist.gov"); // added daylight savings
 
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo, 10000)) {
-    Serial.println("RTC sync failed: no NTP time received");
+    safePrintf("RTC sync failed: no NTP time received");
     return;
   }
 
@@ -276,12 +276,12 @@ void syncRTCFromNTP(RTC_PCF8523 &rtc) {
 
   int32_t driftSeconds = (int32_t)((int64_t)ntpTime.unixtime() - (int64_t)rtcTime.unixtime());
 
-  Serial.printf("RTC drift: %ld seconds\n", (long)driftSeconds);
+  safePrintf("RTC drift: %ld seconds\n", (long)driftSeconds);
 
   if (driftSeconds > 5 || driftSeconds < -5) {
     rtc.adjust(ntpTime);
-    Serial.println("RTC adjusted from NTP");
+    safePrintf("RTC adjusted from NTP");
   } else {
-    Serial.println("RTC already close enough");
+    safePrintf("RTC already close enough");
   }
 }

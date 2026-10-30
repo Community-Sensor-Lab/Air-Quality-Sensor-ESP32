@@ -1,5 +1,4 @@
-#include "CSL_AQS_ESP32_V1.h"
-
+#include "CSL_AQS_ESP32_RTOS_V1.h"
 #define POST_PAYLOAD "\"}"
 
 void initializeClient() {
@@ -12,7 +11,7 @@ void doPost(String outstr) {
   // Check queue condition first
 
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[Upload] Wi-Fi disconnected, skipping upload.");
+    safePrintf("[Upload] Wi-Fi disconnected, skipping upload.");
     return;
   }
 
@@ -30,23 +29,23 @@ void doPost(String outstr) {
     if (httpResponseCode > 0) {
       Serial.printf("HTTP Response code: %d\n", httpResponseCode);
       String response = http.getString();
-      Serial.println("Server response: " + response);
+      safePrintf("Server response: ",response.c_str());
     } else {
       Serial.printf("Error on sending POST: %s\n", http.errorToString(httpResponseCode).c_str());
     }
     http.end();
   } else {
-    Serial.println("[Upload] Failed to initialize HTTP client connection.");
+    safePrintf("[Upload] Failed to initialize HTTP client connection.");
   }
 }
 
 // --- Heartbeat Task (Runs independently on Core 0) ---
 void sendHeartbeat() {
   HTTPClient http;
-  Serial.println("Initialize Heartbeat Task");
+  safePrintf("Initialize Heartbeat Task");
 
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[Heartbeat] Wi-Fi disconnected, skipping pulse.");
+    safePrintf("[Heartbeat] Wi-Fi disconnected, skipping pulse.");
     return;
   }
 
@@ -63,13 +62,13 @@ void sendHeartbeat() {
     if (httpResponseCode > 0) {
       Serial.printf("HTTP Response code: %d\n", httpResponseCode);
       String response = http.getString();
-      Serial.println("Server response: " + response);
+      safePrintf("Server response: ",response.c_str());
     } else {
       Serial.printf("Error on sending POST: %s\n", http.errorToString(httpResponseCode).c_str());
     }
     http.end();
   } else {
-    Serial.println("[Heartbeat] Failed to initialize HTTP client connection.");
+    safePrintf("[Heartbeat] Failed to initialize HTTP client connection.");
   }
 }
 

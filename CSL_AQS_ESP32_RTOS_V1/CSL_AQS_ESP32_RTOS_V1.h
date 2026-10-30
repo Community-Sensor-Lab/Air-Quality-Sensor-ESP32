@@ -1,5 +1,5 @@
-#ifndef CSL_AQI_ESP32_V1_H
-#define CSL_AQI_ESP32_V1_H
+#ifndef CSL_AQI_ESP32_RTOS_V1_H
+#define CSL_AQI_ESP32_RTOS_V1_H
 
 // #includes are part of the global memory space.
 #include <SPI.h>
@@ -16,7 +16,7 @@
 #include <Adafruit_BME280.h>
 #include <SensirionI2CSen5x.h> 
 #include "SparkFun_SCD4x_Arduino_Library.h"
-#include "CSL_AQS_ESP32_V1.h"
+#include "CSL_AQS_ESP32_RTOS_V1.h"
 // #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>  // OLED library
 

@@ -1,5 +1,4 @@
-#include "CSL_AQS_ESP32_V1.h"
-
+#include "CSL_AQS_ESP32_RTOS_V1.h"
 /* INITIALIZE SD CARD */
 void writingToSD(void *pvParameters) {
 
@@ -7,12 +6,12 @@ void writingToSD(void *pvParameters) {
   char filename[] = "/LOG0000.TXT";
   bool fileCreated = false;
   if (!SD.begin()) {  // see if the card is present and can be initialized:
-    Serial.println("SD card mount failed");
+    safePrintf("SD card mount failed");
     //return;
   } else {
     uint8_t cardType = SD.cardType();
     if (cardType == CARD_NONE) {
-      Serial.println("No SD card attached");
+      safePrintf("No SD card attached");
       //return;
     } else {
       Serial.print("Starting SD card...\t\t");
@@ -34,14 +33,14 @@ void writingToSD(void *pvParameters) {
 
 
       if (!fileCreated) {
-        Serial.println("Couldn't create file");
+        safePrintf("Couldn't create file");
 
       } else {
         data logData;
         bool sdConnected = true;  // Track state
 
         while (1) {
-            Serial.println("SD Task running...");
+            safePrintf("SD Task running...");
 
           if (uxQueueMessagesWaiting(wclientQueue) >=SD_QUEUE_BATCH_SIZE) {
 
@@ -49,10 +48,10 @@ void writingToSD(void *pvParameters) {
               if (xQueueReceive(sdQueue, &logData, pdMS_TO_TICKS(1000)) == pdPASS) {
                 // If previously disconnected, try to re-initialize before writing
                 if (!sdConnected) {
-                  Serial.println("[SD] Attempting to re-mount SD card...");
+                  safePrintf("[SD] Attempting to re-mount SD card...");
                   if (SD.begin()) {
                     sdConnected = true;
-                    Serial.println("[SD] Re-connected successfully!");
+                    safePrintf("[SD] Re-connected successfully!");
                   }
                 }
 
@@ -66,15 +65,15 @@ void writingToSD(void *pvParameters) {
                                    logData.mPm1_0, logData.mPm2_5, logData.mPm4_0, logData.mPm10, logData.cPm0_5, logData.cPm1_0, logData.cPm2_5,
                                    logData.cPm2_5, logData.cPm4_0, logData.cPm10, logData.tpSize, logData.RHsen, logData.Tsen, logData.VOCs, logData.NOx);
                     logfile.close();
-                    Serial.println("[SD Background Task] Wrote reading successfully.");
+                    safePrintf("[SD Background Task] Wrote reading successfully.");
                   } else {
                     // Write failed — card likely removed or corrupted
-                    Serial.println("[SD Background Task] Error: Could not open file! Marking disconnected.");
+                    safePrintf("[SD Background Task] Error: Could not open file! Marking disconnected.");
                     SD.end();  // Unmount cleanly
                     sdConnected = false;
                   }
                 } else {
-                  Serial.println("[SD] Card offline. Dropping log or saving to fallback queue.");
+                  safePrintf("[SD] Card offline. Dropping log or saving to fallback queue.");
                 }
               }
             }
@@ -84,6 +83,6 @@ void writingToSD(void *pvParameters) {
       }
     }
   }
-  Serial.println("Failed to find SD. Reset board once added.");
+  safePrintf("Failed to find SD. Reset board once added.");
   vTaskDelete(NULL); 
 }
