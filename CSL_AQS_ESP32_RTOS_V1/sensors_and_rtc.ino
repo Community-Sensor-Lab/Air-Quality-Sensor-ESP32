@@ -182,7 +182,7 @@ void readSensorsAndRTC(void *pvParameters){
     safePrintf("\ninitializeBME();\ninitializeSCD41();\ninitializeSEN55();\ninitializeRTC()\n");
     
     while(1) {
-        safePrintf("Sensor Task running...");
+      safePrintf("Sensor Task running...");
 
       // Datetime
       data sensorData;

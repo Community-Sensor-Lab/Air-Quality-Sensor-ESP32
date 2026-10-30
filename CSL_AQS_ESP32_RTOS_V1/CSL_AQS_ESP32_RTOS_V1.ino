@@ -29,9 +29,9 @@ const char *password = PASSWORD;
 
 // --- Queue Configuration ---
 #define WIFI_CLIENT_QUEUE_SIZE 100  // Queue capacity
-#define WIFI_QUEUE_BATCH_SIZE 1     // How many reading before we start sending to server?
+#define WIFI_QUEUE_BATCH_SIZE 1     // How many payloads do we want before we start sending to the server?
 #define SD_QUEUE_SIZE 100           // Queue capacity
-#define SD_QUEUE_BATCH_SIZE 1       // How many readings before we start writing to sd card?
+#define SD_QUEUE_BATCH_SIZE 1       // How many payloads do we want before we start writing to the sd card?
 #define TESTING_MODE true
 
 // Global handle for the Serial Mutex
