@@ -34,7 +34,7 @@ const char *password = PASSWORD;
 #define SD_QUEUE_BATCH_SIZE 1       // How many payloads do we want before we start writing to the sd card?
 #define TESTING_MODE true
 
-// Global handle for the Serial Mutex
+// Needed to prevent race conditions when threads in core 1 and core 0 use serial.
 SemaphoreHandle_t serialMutex;
 
 QueueHandle_t wclientQueue;
@@ -60,12 +60,16 @@ void setup() {
       ;
   }
 
+  // TODO: Check if user wants to provision
+  // TODO: Provisioning
+  // TODO: Save to EEPROM
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
   Serial.println("\nWiFi Connected!");
+
 
   // Init global vatiables to make it available for both cores
   if (TESTING_MODE) {
@@ -97,7 +101,6 @@ void setup() {
 
   // Spawn independent threads on Core 0
   xTaskCreatePinnedToCore(readSensorsAndRTC, "readSensors", 4096, NULL, 2, NULL, 0);
-  // Note: Increased stack memory to 4096 bytes. File system libraries need room.
   xTaskCreatePinnedToCore(writingToSD, "Task_SD", 4096, NULL, 1, NULL, 0);
 }
 

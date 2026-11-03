@@ -96,17 +96,6 @@ typedef struct {
   float Vbat;
 } data;
 
-//data sensorData; // instantiate a sensor data structure
-
-// wifi and google sheets provisioning 
-// typedef struct {
-//   boolean valid;
-//   char ssid[64];
-//   char passcode[64];
-//   char gsid[128];
-//   boolean WiFiPresent;
-// } Secrets;
-// Secrets provisionInfo;
 
 struct Secrets {
   bool  valid;
@@ -127,26 +116,6 @@ struct SecretsRecord {
   Secrets  payload;
 };
 
-/* OLD CODE FOR WEBPAGE
-static const char provisioningPage[] = R"===(
-<!DOCTYPE HTML><html><head>
-  <title>Community Sensor Lab provisioning page</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  </head><body>
-  <form action="/get">
-    ssid: <input type="text" name="SSID"><br>
-    <!-- <input type="submit" value="Submit">
-  </form><br>
-  <form action="/get"> -->
-    passcode: <input type="password" name="passcode"><br>
-    <!-- <input type="submit" value="Submit">
-   </form><br>
- <form action="/get"> -->
-    gsid: <input type="text" name="GSID"><br>
-    <input type="submit" value="Submit">
-  </form>
-</body></html>
-)===";
-*/
+
 void syncRTCFromNTP();
 #endif
