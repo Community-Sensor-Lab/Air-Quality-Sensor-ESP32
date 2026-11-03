@@ -32,7 +32,10 @@ const char *password = PASSWORD;
 #define WIFI_QUEUE_BATCH_SIZE 1     // How many payloads do we want before we start sending to the server?
 #define SD_QUEUE_SIZE 100           // Queue capacity
 #define SD_QUEUE_BATCH_SIZE 1       // How many payloads do we want before we start writing to the sd card?
+
+// -- Program Configuration
 #define TESTING_MODE true
+#define RECONNECT_TO_WIFI true
 
 // Needed to prevent race conditions when threads in core 1 and core 0 use serial.
 SemaphoreHandle_t serialMutex;
@@ -64,12 +67,20 @@ void setup() {
   // TODO: Provisioning
   // TODO: Save to EEPROM
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
+  unsigned long startTime = millis();
+  const unsigned long timeout = 10000;  // 10 seconds timeout
+
+  while (WiFi.status() != WL_CONNECTED && millis() - startTime < timeout) {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("\nWiFi Connected!");
 
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nWiFi Connected!");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("\nWiFi Connection Failed!");
+  }
 
   // Init global vatiables to make it available for both cores
   if (TESTING_MODE) {
@@ -112,13 +123,34 @@ void loop() {
       for (int i = 0; i < WIFI_QUEUE_BATCH_SIZE; i++) {
         safePrintf("Sending data...");
         data sensorData;
-        // Retrieve data from payload
         if (xQueueReceive(wclientQueue, &sensorData, pdMS_TO_TICKS(5)) == pdPASS) {
           doPost(preparePayload(sensorData));
         }
       }
     } else {
-      safePrintf("WiFi Disconnected. Waiting to batch.");
+      safePrintf("WiFi Disconnected");
+
+      if (RECONNECT_TO_WIFI) {
+        for (int i = 0; i < 3; i++) {
+          safePrintf("Trying to reconnect");
+          WiFi.begin(ssid, password);
+          unsigned long startTime = millis();
+          const unsigned long timeout = 3000;  // 3 seconds timeout
+
+          while (WiFi.status() != WL_CONNECTED && millis() - startTime < timeout) {
+            delay(500);
+            safePrintf(".");
+          }
+
+          if (WiFi.status() == WL_CONNECTED) {
+            safePrintf("\nWiFi Connected!");
+            break;
+          } else {
+            safePrintf("\n Failed to reconnect...");
+          }
+        }
+        safePrintf("\nWiFi Continuing offline");
+      }
     }
   }
 

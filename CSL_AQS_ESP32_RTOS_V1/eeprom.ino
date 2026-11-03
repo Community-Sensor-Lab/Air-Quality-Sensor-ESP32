@@ -48,7 +48,7 @@ void provisioningFromEEPROM() {
 
   } else {
     safePrintf("Loaded ProvisioningInfo from EEPROM.");
-    //Serial.printf("ssid:%s, pw:%s, gsid:%s\nvalid:%i, wifipresent:%i\n",provisionInfo.ssid,provisionInfo.passcode,provisionInfo.gsid,(int)provisionInfo.valid,(int)provisionInfo.WiFiPresent);
+    safePrintf("ssid:%s, pw:%s, gsid:%s\nvalid:%i, wifipresent:%i\n",provisionInfo.ssid,provisionInfo.passcode,provisionInfo.gsid,(int)provisionInfo.valid,(int)provisionInfo.WiFiPresent);
   }  
 }
 
