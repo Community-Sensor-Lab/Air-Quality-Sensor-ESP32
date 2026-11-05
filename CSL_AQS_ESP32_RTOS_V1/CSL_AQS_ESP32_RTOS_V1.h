@@ -107,14 +107,7 @@ struct Secrets {
 
 Secrets provisionInfo;
 
-// A versioned, checksummed record stored in EEPROM.
-struct SecretsRecord {
-  uint32_t magic;      // constant marker
-  uint16_t version;    // increment when struct layout changes
-  uint16_t length;     // sizeof(Secrets) at time of write
-  uint32_t crc32;      // CRC of payload only
-  Secrets  payload;
-};
+Adafruit_SH1107 display = Adafruit_SH1107(64, 128, &Wire);
 
 
 void syncRTCFromNTP();

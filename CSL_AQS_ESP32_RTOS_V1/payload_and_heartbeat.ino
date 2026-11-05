@@ -18,20 +18,21 @@ void doPost(String outstr) {
   http.setTimeout(10000);
   String payload = String(PRE_PAYLOAD_APPEND_ROW) + outstr + POST_PAYLOAD;
 
-  Serial.print("\nStarting connection to server... ");
+  safePrintf("\nStarting connection to server... ");
 
   // Initialize HTTPClient with the secure client
-  if (http.begin(client, APPS_SCRIPT_URL)) {
+  String APP_SCRIPT_URL = "https://script.google.com/macros/s/"+ String(provisionInfo.gsid) +"/exec";
+  if (http.begin(client, APP_SCRIPT_URL)) {
     http.addHeader("Content-Type", "application/json");
 
     int httpResponseCode = http.POST(payload);
 
     if (httpResponseCode > 0) {
-      Serial.printf("HTTP Response code: %d\n", httpResponseCode);
+      safePrintf("HTTP Response code: %d\n", httpResponseCode);
       String response = http.getString();
       safePrintf("Server response: ",response.c_str());
     } else {
-      Serial.printf("Error on sending POST: %s\n", http.errorToString(httpResponseCode).c_str());
+      safePrintf("Error on sending POST: %s\n", http.errorToString(httpResponseCode).c_str());
     }
     http.end();
   } else {
@@ -54,19 +55,19 @@ void sendHeartbeat() {
   http.setTimeout(10000);
   String payload = String(PRE_PAYLOAD_APPEND_ROW) + "Alive" + POST_PAYLOAD;
 
-  Serial.print("\nStarting connection to server... ");
-
-  if (http.begin(client, APPS_SCRIPT_URL)) {
+  safePrintf("\nStarting connection to server... ");
+  String APP_SCRIPT_URL = "https://script.google.com/macros/s/"+ String(provisionInfo.gsid) +"/exec";
+  if (http.begin(client, APP_SCRIPT_URL)) {
     http.addHeader("Content-Type", "application/json");
 
     int httpResponseCode = http.POST(payload);
 
     if (httpResponseCode > 0) {
-      Serial.printf("HTTP Response code: %d\n", httpResponseCode);
+      safePrintf("HTTP Response code: %d\n", httpResponseCode);
       String response = http.getString();
       safePrintf("Server response: ",response.c_str());
     } else {
-      Serial.printf("Error on sending POST: %s\n", http.errorToString(httpResponseCode).c_str());
+      safePrintf("Error on sending POST: %s\n", http.errorToString(httpResponseCode).c_str());
     }
     http.end();
   } else {

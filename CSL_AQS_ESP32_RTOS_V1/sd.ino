@@ -24,13 +24,13 @@ void writingToSD(void *pvParameters) {
         if (!SD.exists(filename)) {                   // only open a new file if it doesn't exist
           logfile = SD.open(filename, FILE_WRITE);
           logfile.println(HEADER);
+          logfile.flush();
+          logfile.close();
           fileCreated = true;
           Serial.printf("Logging to file: %s\n", filename);
           break;  // leave the loop
         }
       }
-
-
 
       if (!fileCreated) {
         safePrintf("Couldn't create file");

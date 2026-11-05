@@ -7,12 +7,12 @@ void initializeBME(Adafruit_BME280& bme280) {
   // bmeStatus = bme.begin(0x76, &Wire2)
   if (!bme280.begin()) {
     safePrintf("BME280 not detected");
-    //display.println("BME280 not detected");
-    //display.display();
+    display.println("BME280 not detected");
+    display.display();
   } else {
     safePrintf("BME280 connected");
-    //display.println("BME280 connected");
-    //display.display();
+    display.println("BME280 connected");
+    display.display();
   }
 }
 
@@ -30,17 +30,17 @@ void initializeSCD41(SCD4x& scd41) {
   if (scd41.begin(false, false, false) == false)  // measBegin, autoCal, skipStopPeriodicMeasurements i.e. Do not start periodic measurements
   {
     safePrintf("SCD41 sensor not detected");
-    //display.println("SCD41 sensor not detected");
-    //display.display();
+    display.println("SCD41 sensor not detected");
+    display.display();
   }
   if (!scd41.measureSingleShot()) {
     safePrintf("SCD41 measureSingleShot failed");
-   // display.println("SCD41 measureSingleShot failed");
-   // display.display();
+   display.println("SCD41 measureSingleShot failed");
+   display.display();
   } else
     safePrintf("SCD41 connected");
-  //display.println("SCD41 connected");
-  //display.display();
+  display.println("SCD41 connected");
+  display.display();
 }
 
 void readSCD41(SCD4x& scd41, data &reading) {
@@ -147,37 +147,40 @@ float getRandomVoltage() {
   return ((float)raw_rand / (float)UINT32_MAX) * 3.3f;
 }
 
+
 void readSensorsAndRTC(void *pvParameters){
   safePrintf("Calling Read SensorAndRTC");
   //--- Initialize RTC ----
+  display.clearDisplay();
+  display.setCursor(0, 0);
 
   RTC_PCF8523 rtc; 
- // initializeRTC(&rtc); 
   Serial.print("Starting RTC...\t\t\t");
   
   Wire.begin();  // connect to RTC
   if (!rtc.begin()) {
     safePrintf("RTC failed");
-    //display.println("RTC failed");
-    //display.display();
+    display.println("RTC failed");
+    display.display();
   } else {
     safePrintf("RTC connected");
-    //display.println("RTC connected");
+    display.println("RTC connected");
+
     
-    DateTime now= rtc.now(); //UPDATE JULY 29
+    DateTime now= rtc.now(); 
 
     char tstring[128];
     sprintf(tstring, "%02u/%02u/%02u %02u:%02u:%02u", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
     safePrintf("Date time...\t\t\t%s\n",tstring);
-    //display.println(tstring);
-    //display.display();
+    display.println(tstring);
+    display.display();
   }
   //TO SET TIME at compile : run once to syncro then run again with line commented out
   //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
 
- 
-  DateTime now;
 
+  DateTime now;
+  display.display();
   if(TESTING_MODE){
     safePrintf("\ninitializeBME();\ninitializeSCD41();\ninitializeSEN55();\ninitializeRTC()\n");
     
@@ -215,7 +218,7 @@ void readSensorsAndRTC(void *pvParameters){
       
       if (xQueueSend(sdQueue, & sensorData, pdMS_TO_TICKS(0)) != pdPASS)  safePrintf("sd queue full! Dropping sample");
       
-       vTaskDelay(pdMS_TO_TICKS(2000)); 
+       vTaskDelay(pdMS_TO_TICKS(SAMPLING_RATE)); 
     }
 
   }
@@ -239,7 +242,7 @@ void readSensorsAndRTC(void *pvParameters){
       if (xQueueSend(wclientQueue, &sensorData, pdMS_TO_TICKS(0)) != pdPASS) safePrintf("wifi client queue full! Dropping sample");
       if (xQueueSend(sdQueue, & sensorData, pdMS_TO_TICKS(0)) != pdPASS) safePrintf("sd queue full! Dropping sample");
     
-      vTaskDelay(pdMS_TO_TICKS(2000)); 
+      vTaskDelay(pdMS_TO_TICKS(SAMPLING_RATE)); 
     }
 
   }
