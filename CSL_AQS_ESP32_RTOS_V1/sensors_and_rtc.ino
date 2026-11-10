@@ -1,7 +1,27 @@
 #include "CSL_AQS_ESP32_RTOS_V1.h"
-/* BME280 TEMP, PRESS, RH BOARD FROM ADAFRUIT USING 'Adafruit_BME280.h' */
 
-void initializeBME(Adafruit_BME280& bme280) {
+
+/*
+  =====================================================================
+  Sensors and RTC 
+  Initializes references to BME280, SCD41, and SEN55 sensors. 
+
+
+  =====================================================================
+*/
+
+
+/**
+* Sensor: BME280 
+* Measurements: temp, press, rh 
+* Board: from Adafruit
+* Library:'Adafruit_BME280.h'
+*
+* @brief Initializes the BME280 sensor
+* @param bme280 sensor reference
+* @return void
+*/
+void initializeBME280(Adafruit_BME280& bme280) {
   Serial.print("Starting BME280 TPRH...\t\t");
   // You can also pass in a Wire library object like &Wire2
   // bmeStatus = bme.begin(0x76, &Wire2)
@@ -16,14 +36,30 @@ void initializeBME(Adafruit_BME280& bme280) {
   }
 }
 
-void readBME(Adafruit_BME280& bme280, data &reading) {
-  reading.Tbme  = bme280.readTemperature();
-  reading.Pbme  = bme280.readPressure() / 100;  // for hPa
+/**
+* @brief Read the SCD41 sensor and store in the 'data' struct
+* @param scd280 sensor reference 
+* @param data   struct reference
+* @return void
+*/
+void readBME(Adafruit_BME280& bme280, data& reading) {
+  reading.Tbme = bme280.readTemperature();
+  reading.Pbme = bme280.readPressure() / 100;  // for hPa
   reading.RHbme = bme280.readHumidity();
 }
 
-/* SCD41 CO2 SENSOR FROM SENSIRION USING "SparkFun_SCD4x_Arduino_Library.h"*/
 
+/**
+* Sensor Details
+*   Sensor: SCD41
+*   Meassures: CO2
+*   Board: from Sensirion
+*   Library: "SparkFun_SCD4x_Arduino_Library.h"
+
+* @brief Initializes the SCD41 sensor
+* @param scd41 sensor reference
+* @return void
+*/
 void initializeSCD41(SCD4x& scd41) {
   Serial.print("Starting SCD41 CO2...\t\t");
   //mySensor.enableDebugging(); // Uncomment this line to get helpful debug messages on Serial
@@ -35,15 +71,21 @@ void initializeSCD41(SCD4x& scd41) {
   }
   if (!scd41.measureSingleShot()) {
     safePrintf("SCD41 measureSingleShot failed");
-   display.println("SCD41 measureSingleShot failed");
-   display.display();
+    display.println("SCD41 measureSingleShot failed");
+    display.display();
   } else
     safePrintf("SCD41 connected");
   display.println("SCD41 connected");
   display.display();
 }
 
-void readSCD41(SCD4x& scd41, data &reading) {
+/**
+* @brief Initializes the SCD41 sensor
+* @param scd41 sensor reference 
+* @param data  struct reference 
+* @return void
+*/
+void readSCD41(SCD4x& scd41, data& reading) {
   scd41.measureSingleShot();        // Request fresh data (should take 5 seconds)
   while (!scd41.readMeasurement())  // readMeasurement will return true when fresh data is available
   {
@@ -53,16 +95,24 @@ void readSCD41(SCD4x& scd41, data &reading) {
   reading.CO2 = scd41.getCO2();
   reading.Tco2 = scd41.getTemperature();
   reading.RHco2 = scd41.getHumidity();
-
 }
 
-/* SEN55 PM VOC NOX SENSOR FROM SENSIRION USING "SensirionI2CSen5x.h" */
 
 #define MAXBUF_REQUIREMENT 48
 #if ((defined(I2C_BUFFER_LENGTH) && (I2C_BUFFER_LENGTH >= MAXBUF_REQUIREMENT)) || (defined(BUFFER_LENGTH) && BUFFER_LENGTH >= MAXBUF_REQUIREMENT))
 #define USE_PRODUCT_INFO
 #endif
 
+/** 
+*  Sensor: SEN55
+*  Meassures: pm voc nox 
+*  Board: from Sensirion
+*  Library: "SensirionI2CSen5x.h" 
+*
+* @brief Initializes the SCD55 sensor
+* @param sen55 sensor reference
+* @return void
+*/
 void initializeSEN55(SensirionI2CSen5x& sen55) {
   Serial.print("Starting SEN55 PM2.5...\t\t");
   Wire.begin();
@@ -98,20 +148,26 @@ void initializeSEN55(SensirionI2CSen5x& sen55) {
   }
 }
 
-void readSEN55(SensirionI2CSen5x& sen55,data &reading) {
+/**
+* @brief Initializes the SCD41 sensor
+* @param scd41 sensor reference 
+* @param data  struct reference
+* @return void
+*/
+void readSEN55(SensirionI2CSen5x& sen55, data& reading) {
   uint16_t error;
   char errorMessage[256];
   delay(1000);
 
-  error = sen55.readMeasuredValues( 
-            reading.mPm1_0,
-            reading.mPm2_5,
-            reading.mPm4_0,
-            reading.mPm10,
-            reading.RHsen,
-            reading.Tsen,
-            reading.VOCs,
-            reading.NOx );
+  error = sen55.readMeasuredValues(
+    reading.mPm1_0,
+    reading.mPm2_5,
+    reading.mPm4_0,
+    reading.mPm10,
+    reading.RHsen,
+    reading.Tsen,
+    reading.VOCs,
+    reading.NOx);
 
   if (error) {
     Serial.print("Error trying to execute readMeasuredValues(): ");
@@ -119,44 +175,40 @@ void readSEN55(SensirionI2CSen5x& sen55,data &reading) {
     safePrintf(errorMessage);
   }
 
-  error = sen55.readMeasuredPmValues( 
-            reading.mPm1_0,
-            reading.mPm2_5,
-            reading.mPm4_0,
-            reading.mPm10,            
-            reading.cPm0_5,
-            reading.cPm1_0,
-            reading.cPm2_5,
-            reading.cPm4_0,
-            reading.cPm10,            
-            reading.tpSize);
+  error = sen55.readMeasuredPmValues(
+    reading.mPm1_0,
+    reading.mPm2_5,
+    reading.mPm4_0,
+    reading.mPm10,
+    reading.cPm0_5,
+    reading.cPm1_0,
+    reading.cPm2_5,
+    reading.cPm4_0,
+    reading.cPm10,
+    reading.tpSize);
 
   if (error) {
     Serial.print("Error trying to execute readMeasuredPmValues(): ");
     errorToString(error, errorMessage, 256);
     safePrintf(errorMessage);
   }
- 
 }
 
 
-
-// --- Helper Function to Generate a Random Float (0.0 to 3.3) ---
-float getRandomVoltage() {
-  uint32_t raw_rand = esp_random();
-  return ((float)raw_rand / (float)UINT32_MAX) * 3.3f;
-}
-
-
-void readSensorsAndRTC(void *pvParameters){
-  safePrintf("Calling Read SensorAndRTC");
+/**
+* @brief Sets up the sensors and rtc to start the task
+* @param pvParameters (optional) 
+* @return void
+*/
+void readSensorsAndRTCTask(void* pvParameters) {
+  safePrintf("Creating readSensorsAndRTC task");
   //--- Initialize RTC ----
   display.clearDisplay();
   display.setCursor(0, 0);
 
-  RTC_PCF8523 rtc; 
+  RTC_PCF8523 rtc;
   Serial.print("Starting RTC...\t\t\t");
-  
+
   Wire.begin();  // connect to RTC
   if (!rtc.begin()) {
     safePrintf("RTC failed");
@@ -165,91 +217,48 @@ void readSensorsAndRTC(void *pvParameters){
   } else {
     safePrintf("RTC connected");
     display.println("RTC connected");
-
-    
-    DateTime now= rtc.now(); 
-
+    DateTime now = rtc.now();
     char tstring[128];
     sprintf(tstring, "%02u/%02u/%02u %02u:%02u:%02u", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
-    safePrintf("Date time...\t\t\t%s\n",tstring);
+    safePrintf("Date time...\t\t\t%s\n", tstring);
     display.println(tstring);
     display.display();
   }
   //TO SET TIME at compile : run once to syncro then run again with line commented out
   //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
 
-
   DateTime now;
   display.display();
-  if(TESTING_MODE){
-    safePrintf("\ninitializeBME();\ninitializeSCD41();\ninitializeSEN55();\ninitializeRTC()\n");
-    
-    while(1) {
-      safePrintf("Sensor Task running...");
 
-      // Datetime
-      data sensorData;
-      now = rtc.now();
-      snprintf(sensorData.now, sizeof(sensorData.now), "%04d-%02d-%02d %02d:%02d:%02d", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
-      //readBME
-      sensorData.Tbme = getRandomVoltage();
-      sensorData.Pbme = getRandomVoltage();
-      sensorData.RHbme = getRandomVoltage();
-      //readSEN55
-      sensorData.CO2 = getRandomVoltage();
-      sensorData.Tco2 = getRandomVoltage();
-      //readSCD41
-      sensorData.mPm1_0 = getRandomVoltage();
-      sensorData.mPm2_5 = getRandomVoltage();
-      sensorData.mPm4_0 = getRandomVoltage();
-      sensorData.mPm10 = getRandomVoltage();
-      sensorData.cPm0_5 = getRandomVoltage();
-      sensorData.cPm1_0 = getRandomVoltage();
-      sensorData.cPm2_5 = getRandomVoltage();
-      sensorData.cPm4_0 = getRandomVoltage();
-      sensorData.cPm10 = getRandomVoltage();
-      sensorData.tpSize = getRandomVoltage();
-      sensorData.RHbme = getRandomVoltage();
-      sensorData.Tsen = getRandomVoltage();
-      sensorData.VOCs = getRandomVoltage();
-      sensorData.NOx = getRandomVoltage();
-      
-      if (xQueueSend(wclientQueue, & sensorData, pdMS_TO_TICKS(0)) != pdPASS) safePrintf("wifi client queue full! Dropping sample");
-      
-      if (xQueueSend(sdQueue, & sensorData, pdMS_TO_TICKS(0)) != pdPASS)  safePrintf("sd queue full! Dropping sample");
-      
-       vTaskDelay(pdMS_TO_TICKS(SAMPLING_RATE)); 
-    }
+  Adafruit_BME280 bme280;
+  SCD4x scd41(SCD4x_SENSOR_SCD41);
+  SensirionI2CSen5x sen55;
+  initializeBME280(bme280);
+  initializeSEN55(sen55);
+  initializeSCD41(scd41);
 
-  }
-  else{
-    
-    Adafruit_BME280 bme280;
-    SCD4x scd41(SCD4x_SENSOR_SCD41);
-    SensirionI2CSen5x sen55;
-    initializeBME(bme280);
-    initializeSEN55(sen55);
-    initializeSCD41(scd41);
+  while (1) {
+    data sensorData;
+    now = rtc.now();
+    snprintf(sensorData.now, sizeof(sensorData.now), "%04d-%02d-%02d %02d:%02d:%02d", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
+    readBME(bme280, sensorData);
+    readSEN55(sen55, sensorData);
+    readSCD41(scd41, sensorData);
 
-    while(1) {
-      data sensorData;
-      now = rtc.now();
-      snprintf(sensorData.now, sizeof(sensorData.now), "%04d-%02d-%02d %02d:%02d:%02d", now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
-      readBME(bme280,sensorData);
-      readSEN55(sen55,sensorData);
-      readSCD41(scd41,sensorData);
+    if (xQueueSend(wclientQueue, &sensorData, pdMS_TO_TICKS(0)) != pdPASS) safePrintf("wifi client queue full! Dropping sample");
+    if (xQueueSend(sdQueue, &sensorData, pdMS_TO_TICKS(0)) != pdPASS) safePrintf("sd queue full! Dropping sample");
 
-      if (xQueueSend(wclientQueue, &sensorData, pdMS_TO_TICKS(0)) != pdPASS) safePrintf("wifi client queue full! Dropping sample");
-      if (xQueueSend(sdQueue, & sensorData, pdMS_TO_TICKS(0)) != pdPASS) safePrintf("sd queue full! Dropping sample");
-    
-      vTaskDelay(pdMS_TO_TICKS(SAMPLING_RATE)); 
-    }
-
+    vTaskDelay(pdMS_TO_TICKS(SAMPLING_PERIOD));
   }
 }
 
 
-void syncRTCFromNTP(RTC_PCF8523 &rtc) {
+/**
+* @brief Synchronize time via NTP (Required for TLS validation)
+* @param rtc real time clock reference
+* @return void
+*/
+void syncRTCFromNTP(RTC_PCF8523& rtc) {
   if (WiFi.status() != WL_CONNECTED) {
     safePrintf("Skipping RTC sync: WiFi not connected");
     return;
@@ -258,7 +267,7 @@ void syncRTCFromNTP(RTC_PCF8523 &rtc) {
   safePrintf("Syncing RTC from NTP...");
 
   //configTime(-5 * 3600, 0, "pool.ntp.org", "time.nist.gov");
-  configTime(-5 * 3600, 3600, "pool.ntp.org", "time.nist.gov"); // added daylight savings
+  configTime(-5 * 3600, 3600, "pool.ntp.org", "time.nist.gov");  // added daylight savings
 
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo, 10000)) {
@@ -272,8 +281,7 @@ void syncRTCFromNTP(RTC_PCF8523 &rtc) {
     timeinfo.tm_mday,
     timeinfo.tm_hour,
     timeinfo.tm_min,
-    timeinfo.tm_sec
-  );
+    timeinfo.tm_sec);
 
   DateTime rtcTime = rtc.now();
 

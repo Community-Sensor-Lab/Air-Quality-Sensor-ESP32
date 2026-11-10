@@ -39,7 +39,7 @@ void doPost(String outstr) {
     safePrintf("[Upload] Failed to initialize HTTP client connection.");
   }
 
-  sendHeartbeat();
+  //sendHeartbeat();
 }
 
 // --- Heartbeat Task (Runs independently on Core 0) ---

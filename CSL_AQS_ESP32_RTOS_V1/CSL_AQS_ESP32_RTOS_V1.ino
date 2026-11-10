@@ -14,31 +14,31 @@
    RICARDO TOLEDO-CROW NGENS, ESI, ASRC, CUNY, May 2025
    Edited: Jonathan Suconota
 */
+
+
 #include "CSL_AQS_ESP32_RTOS_V1.h"
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
-#include <secrets.h>
+//#include <secrets.h>
 
-// --- Hardware Pin Configuration ---
-//#define SD_CS_PIN 5       // Standard ESP32 SPI Chip Select pin for SD cards. Change if your shield differs.
-
-// --- Network Configurations ---
-#define SAMPLING_RATE 2000
+// Number of readings per interval
+#define SAMPLING_RATE 1
+// Time of samping interval
+#define SAMPLING_PERIOD 2000
 
 // --- Queue Configuration ---
-#define WIFI_CLIENT_QUEUE_SIZE 100  // Queue capacity
-#define WIFI_QUEUE_BATCH_SIZE 1     // How many payloads do we want before we start sending to the server?
-#define SD_QUEUE_SIZE 100           // Queue capacity
-#define SD_QUEUE_BATCH_SIZE 1       // How many payloads do we want before we start writing to the sd card?
+#define WIFI_CLIENT_QUEUE_SIZE 100
+#define WIFI_QUEUE_BATCH_SIZE 1
+#define SD_QUEUE_SIZE 100
+#define SD_QUEUE_BATCH_SIZE 1
 
 // -- Program Configuration
 #define TESTING_MODE false
 #define RECONNECT_TO_WIFI true
-// Make the 
+// Make the
 // #define SD_PRESENT true
 
-// Needed to prevent race conditions when threads in core 1 and core 0 use serial.
-SemaphoreHandle_t serialMutex;
+SemaphoreHandle_t serialMutex;  // Used to prevent race conditions when threads in core 1 and core 0 use serial.
 
 QueueHandle_t wclientQueue;
 QueueHandle_t sdQueue;  // Added: Dedicated queue for background SD card logging
@@ -46,30 +46,30 @@ QueueHandle_t sdQueue;  // Added: Dedicated queue for background SD card logging
 WiFiClientSecure client;
 
 String prepareData(data &sensorData);
-void readSensorsAndRTC(void *pvParameters);
+void readSensorsAndRTCTask(void *pvParameters);
 String preparePayload(data &sensorData);
-void writingToSD(void *pvParameters);
+void writingToSDTask(void *pvParameters);
 
 void setup() {
   Serial.begin(115200);
 
-  // Initialize both FreeRTOS Queues
   wclientQueue = xQueueCreate(WIFI_CLIENT_QUEUE_SIZE, sizeof(data));
   sdQueue = xQueueCreate(SD_QUEUE_SIZE, sizeof(data));
 
   if (wclientQueue == NULL || sdQueue == NULL) {
     Serial.println("Queue allocation failed!");
-    while (1);
+    while (1)
+      ;
   }
 
-  
-  // Init global vatiables to make it available for both cores
-  if (TESTING_MODE) {
-    Serial.println(" initializeOLED()");
-  } else {
-    initializeOLED(display);
+  serialMutex = xSemaphoreCreateMutex();
+  if (serialMutex == NULL) {
+    Serial.println("Serial Mutex allocation failed!");
+    while (1)
+      ;
   }
 
+  initializeOLED(display);
   provisioning();
 
   Serial.printf("10s to decide\n");
@@ -85,7 +85,7 @@ void setup() {
     Serial.println();
   }
 
-   // If we have a valid provision and wifi, try it out
+  // If we have a valid provision and wifi, try it out
   if (provisionInfo.valid && provisionInfo.WiFiPresent) {
     connectToWiFi();
   }
@@ -111,19 +111,15 @@ void setup() {
     display.printf("No WiFi\n");
     display.display();
   }
-  
-  
+
+
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\nWiFi Connected!");
-    //Serial.println(WiFi.localIP());
-    // Synchronize time via NTP (Required for TLS validation)
-
     syncRTCFromNPT();
   } else {
     Serial.println("\nWiFi Connection Failed!");
   }
 
- 
 
   // Set the Root CA certificate for strict validation
   client.setCACert(test_root_ca);
@@ -131,47 +127,34 @@ void setup() {
   doPost(PRE_PAYLOAD_ADD_HEADER HEADER);
   Serial.println("\n*** Done adding header to google sheet");
 
-  // Create the mutex before starting any tasks
-  serialMutex = xSemaphoreCreateMutex();
-  if (serialMutex == NULL) {
-    Serial.println("Serial Mutex allocation failed!");
-    while (1)
-      ;
-  }
 
   // Spawn independent threads on Core 0
-  xTaskCreatePinnedToCore(readSensorsAndRTC, "readSensors", 4096, NULL, 2, NULL, 0);
-  xTaskCreatePinnedToCore(writingToSD, "Task_SD", 4096, NULL, 1, NULL, 0);
+  xTaskCreatePinnedToCore(readSensorsAndRTCTask, "readSensors", 4096, NULL, 2, NULL, 0);
+  xTaskCreatePinnedToCore(writingToSDTask, "Task_SD", 4096, NULL, 1, NULL, 0);
 }
 
 // --- Main Thread: (Runs on Core 1) ---
 void loop() {
   safePrintf("Main loop running...");
   if (uxQueueMessagesWaiting(wclientQueue) >= WIFI_QUEUE_BATCH_SIZE) {
-    if (WiFi.status() == WL_CONNECTED) {
-      for (int i = 0; i < WIFI_QUEUE_BATCH_SIZE; i++) {
-        safePrintf("Sending data...");
-        data sensorData;
-        if (xQueueReceive(wclientQueue, &sensorData, pdMS_TO_TICKS(5)) == pdPASS) {
-          doPost(preparePayload(sensorData));
-        }
-      }
-    } else {
+    if (WiFi.status() != WL_CONNECTED) {
       safePrintf("WiFi Disconnected");
+      for (int i = 0; i < 3; i++) {
+        safePrintf("Trying to reconnect");
+        connectToWiFi(); // 1 second bettween each attempt
+      }
+      safePrintf("\nWiFi Continuing offline");
+    }
 
-      if (RECONNECT_TO_WIFI) {
-        for (int i = 0; i < 3; i++) {
-          safePrintf("Trying to reconnect");
-          connectToWiFi();
-
-        
-        }
-        safePrintf("\nWiFi Continuing offline");
+    for (int i = 0; i < WIFI_QUEUE_BATCH_SIZE; i++) {
+      safePrintf("Sending data...");
+      data sensorData;
+      if (xQueueReceive(wclientQueue, &sensorData, pdMS_TO_TICKS(5)) == pdPASS) {
+        doPost(preparePayload(sensorData));
       }
     }
   }
-
-  vTaskDelay(pdMS_TO_TICKS(100));
+  vTaskDelay(pdMS_TO_TICKS(700));
 }
 
 
@@ -193,7 +176,7 @@ void safePrintf(const char *format, ...) {
   }
 }
 
-void syncRTCFromNPT(){
+void syncRTCFromNPT() {
   // Synchronize time via NTP (Required for TLS validation)
   configTime(0, 0, "pool.ntp.org", "time.nist.gov");
   Serial.print("Waiting for NTP time sync: ");

@@ -20,11 +20,11 @@
 // #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>  // OLED library
 
-
+// --- Hardware Pin Configuration ---
 #define VBATPIN A13  // this is also D9 button A disable pullup to read analog
 #define BUTTON_A 15  // for the adafruit Feather ESP32 v2 (ABC, 15 32 14) Oled button also A7 enable pullup to read button
 #define BUTTON_B 32  // for the adafruit Feather ESP32 v2 (ABC, 15 32 14) Oled button also A7 enable pullup to read button
-#define WIFI_TIMEOUT 10000 // how long to wait for connection in ms
+#define WIFI_TIMEOUT 1000 // how long to wait for connection in ms
 //#define SD_CS 10    // Chip select for SD card default for Adalogger
 
 // Title of the columns
@@ -32,15 +32,12 @@
 #define PRE_PAYLOAD_APPEND_ROW "{\"command\":\"appendRow\",\"sheet_name\":\"Sheet1\",\"values\":\""
 #define PRE_PAYLOAD_ADD_HEADER "{\"command\":\"addHeader\",\"sheet_name\":\"Sheet1\",\"values\":\""
 #define SERVER "script.google.com"  // Server URL
+
 // Global web server
 static WebServer server(80);
 static String mac_ssid;
 String FullmacStr = "";
 
-// Constants
-static constexpr uint32_t SECRETS_MAGIC   = 0x53454352; // 'SECR'
-static constexpr uint16_t SECRETS_VERSION = 1;
-static constexpr int      EEPROM_ADDR     = 0;
 
 // Google Certificate
 const char* test_root_ca = R"string_literal(
@@ -105,6 +102,8 @@ struct Secrets {
   bool  WiFiPresent;
 };
 
+
+// --- Network Configurations ---
 Secrets provisionInfo;
 
 Adafruit_SH1107 display = Adafruit_SH1107(64, 128, &Wire);

@@ -64,12 +64,12 @@ bool loadProvisioningInfoFromPreferences(Secrets& out) {
 // Read and verify info from Preferences
 void provisioningFromPreferences() {
   if (!loadProvisioningInfoFromPreferences(provisionInfo)) {
-    safePrintf("No valid ProvisioningInfo in Preferences");
+    safePrintff("No valid ProvisioningInfo in Preferences");
     provisionInfo.valid = false;
     provisionInfo.WiFiPresent = true;
   } else {
-    safePrintf("Loaded ProvisioningInfo from Preferences.");
-    safePrintf("ssid:%s, pw:%s, gsid:%s\nvalid:%i, wifipresent:%i\n",
+    safePrintff("Loaded ProvisioningInfo from Preferences.");
+    safePrintff("ssid:%s, pw:%s, gsid:%s\nvalid:%i, wifipresent:%i\n",
                provisionInfo.ssid, provisionInfo.passcode, provisionInfo.gsid, 
                (int)provisionInfo.valid, (int)provisionInfo.WiFiPresent);
   }  
@@ -131,13 +131,13 @@ String buildProvisioningPage() {
 }
 
 void handleRoot() {
-  safePrintf("handleRoot");
+  safePrintff("handleRoot");
   String page = buildProvisioningPage();
   server.send(200, "text/html", page);
 }
 
 void handleGet() {
-  safePrintf("handleGet");
+  safePrintff("handleGet");
   String ssidRaw = server.hasArg("SSID") ? server.arg("SSID") : "";
   String passRaw = server.hasArg("passcode") ? server.arg("passcode") : "";
   String gsidRaw = server.hasArg("GSID") ? server.arg("GSID") : "";
@@ -152,13 +152,13 @@ void handleGet() {
   strlcpy(provisionInfo.passcode, pass.c_str(), sizeof(provisionInfo.passcode));
   strlcpy(provisionInfo.gsid, gsid.c_str(), sizeof(provisionInfo.gsid));
 
-  safePrintf("\n✅ Provisioning received:");
+  safePrintff("\n✅ Provisioning received:");
   Serial.print("  SSID: ");
-  safePrintf(provisionInfo.ssid);
+  safePrintff(provisionInfo.ssid);
   Serial.print("  PASS: ");
-  safePrintf(provisionInfo.passcode);  
+  safePrintff(provisionInfo.passcode);  
   Serial.print("  GSID: ");
-  safePrintf(provisionInfo.gsid);
+  safePrintff(provisionInfo.gsid);
 
   String resp = "<!DOCTYPE html><html><body>";
   resp += "<h3>Received provisioning info</h3>";
@@ -175,14 +175,14 @@ void handleGet() {
 }
 
 void handleNotFound() {
-  safePrintf("handleNotFound");
+  safePrintff("handleNotFound");
   server.send(404, "text/plain", "Not found");
 }
 
 void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
   switch (event) {
     case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
-      Serial.printf(
+      safePrintf(
         "📲 Client connected: %02X:%02X:%02X:%02X:%02X:%02X, AID=%d\n",
         info.wifi_ap_staconnected.mac[0], info.wifi_ap_staconnected.mac[1],
         info.wifi_ap_staconnected.mac[2], info.wifi_ap_staconnected.mac[3],
@@ -191,7 +191,7 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
       break;
 
     case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
-      Serial.printf(
+      safePrintf(
         "📴 Client disconnected: %02X:%02X:%02X:%02X:%02X:%02X, AID=%d\n",
         info.wifi_ap_stadisconnected.mac[0], info.wifi_ap_stadisconnected.mac[1],
         info.wifi_ap_stadisconnected.mac[2], info.wifi_ap_stadisconnected.mac[3],
@@ -205,7 +205,7 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
 }
 
 void printMac(const char* label, uint8_t mac[6]) {
-  Serial.printf("%s: %02X:%02X:%02X:%02X:%02X:%02X\n",  
+  safePrintf("%s: %02X:%02X:%02X:%02X:%02X:%02X\n",  
                 label, mac[0], mac[1], mac[2],
                 mac[3], mac[4], mac[5]);
 }
@@ -230,10 +230,10 @@ void softAPprovision() {
   display.setCursor(0, 0);
 
   if (!WiFi.softAP(mac_ssid.c_str())) {
-    safePrintf("❌ softAP start failed");
+    safePrintff("❌ softAP start failed");
     display.printf("SoftAP start failed\n");
   } else {
-    Serial.printf("✅ Started Provisioning Wifi: %s\n", mac_ssid.c_str());
+    safePrintf("✅ Started Provisioning Wifi: %s\n", mac_ssid.c_str());
     display.printf("Started Provisioning Wifi:%s\n", mac_ssid.c_str());
   }
   display.display();
@@ -243,8 +243,8 @@ void softAPprovision() {
   server.onNotFound(handleNotFound);
 
   server.begin();
-  safePrintf("✅ HTTP server started (port 80)");
-  Serial.printf("Open webpage to %s on device connected to the WiFi\n", WiFi.softAPIP().toString().c_str());
+  safePrintff("✅ HTTP server started (port 80)");
+  safePrintf("Open webpage to %s on device connected to the WiFi\n", WiFi.softAPIP().toString().c_str());
 
   uint64_t chipid = ESP.getEfuseMac();  
   uint8_t baseMac[6];                       
@@ -270,7 +270,7 @@ void softAPprovision() {
   while (!provisionInfo.valid) {
     server.handleClient();
     if (!provisionInfo.WiFiPresent) {
-      safePrintf("Provisioning canceled. Continue without WiFi");
+      safePrintff("Provisioning canceled. Continue without WiFi");
       display.printf("Canceled. No WiFi");
       display.display();
       break;
@@ -283,7 +283,7 @@ void softAPprovision() {
 
 void connectToWiFi() {
   delay(1000);
-  Serial.printf("\nWill try to connect to WiFi: %s\n", provisionInfo.ssid);
+  safePrintf("\nWill try to connect to WiFi: %s\n", provisionInfo.ssid);
   display.clearDisplay();
   display.setCursor(0, 0);
   display.printf("(A) Provisioning\n");
@@ -299,7 +299,7 @@ void connectToWiFi() {
     Serial.print(".");
     delay(100);
     if ((millis() - st) > WIFI_TIMEOUT) {
-      safePrintf("wifi connect timeout");
+      safePrintff("wifi connect timeout");
       provisionInfo.valid = false;
       break;
     }
@@ -319,32 +319,32 @@ void connectToWiFi() {
             (uint8_t)(mac >> 40) & 0xFF);
     FullmacStr = String(macBuf);
 
-    Serial.printf("\nConnected to WiFi: %s\n", provisionInfo.ssid);
+    safePrintf("\nConnected to WiFi: %s\n", provisionInfo.ssid);
     display.printf("\nConnected to WiFi: \n\n%s", provisionInfo.ssid);
     display.display();
   }
   else 
   {
-    safePrintf("\n Failed to reconnect...");
+    safePrintff("\n Failed to reconnect...");
   }
 }
 
 void provisioning() {
-  Serial.printf("To force provisioning press button A\n");
-  Serial.printf("To continue without WiFi press button B\n");
+  safePrintf("To force provisioning press button A\n");
+  safePrintf("To continue without WiFi press button B\n");
   display.printf("Provisioning: bttn A\n");
   display.printf("No WiFi: bttn B\n");
   display.display();
 
   provisioningFromPreferences();  // get Preferences info
 
-  Serial.printf("10s to decide\n");
+  safePrintf("10s to decide\n");
   unsigned long ts = millis();
 
   if (provisionInfo.valid) {  
     int i = 10;
     while (millis() - ts < WIFI_TIMEOUT && provisionInfo.valid && provisionInfo.WiFiPresent) {
-      Serial.printf("%d ", i--);
+      safePrintf("%d ", i--);
       delay(1000);
     }
     Serial.println();

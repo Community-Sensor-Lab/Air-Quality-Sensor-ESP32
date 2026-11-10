@@ -1,6 +1,6 @@
 #include "CSL_AQS_ESP32_RTOS_V1.h"
 /* INITIALIZE SD CARD */
-void writingToSD(void *pvParameters) {
+void writingToSDTask(void *pvParameters) {
 
   File logfile;
   char filename[] = "/LOG0000.TXT";
