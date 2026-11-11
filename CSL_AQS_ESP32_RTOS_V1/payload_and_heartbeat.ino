@@ -101,3 +101,4 @@ String preparePayload(data& sensorData) {
           + String(sensorData.VOCs) + String(", ")
           + String(sensorData.NOx));
 }
+

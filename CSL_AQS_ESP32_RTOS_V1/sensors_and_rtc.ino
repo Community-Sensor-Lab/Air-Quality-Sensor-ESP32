@@ -246,9 +246,16 @@ void readSensorsAndRTCTask(void* pvParameters) {
     readSEN55(sen55, sensorData);
     readSCD41(scd41, sensorData);
 
-    if (xQueueSend(wclientQueue, &sensorData, pdMS_TO_TICKS(0)) != pdPASS) safePrintf("wifi client queue full! Dropping sample");
-    if (xQueueSend(sdQueue, &sensorData, pdMS_TO_TICKS(0)) != pdPASS) safePrintf("sd queue full! Dropping sample");
+  
+    if (xQueueSend(wclientQueue, &sensorData, pdMS_TO_TICKS(0)) != pdPASS){
+      safePrintf("wifi client queue full! Dropping sample");
+      queue_push_overwrite(wclientQueue, &sensorData);
+    }
 
+    if (xQueueSend(sdQueue, &sensorData, pdMS_TO_TICKS(0)) != pdPASS) {
+      safePrintf("sd queue full! Dropping sample");
+      queue_push_overwrite(sdQueue, &sensorData);
+    }
     vTaskDelay(pdMS_TO_TICKS(SAMPLING_PERIOD));
   }
 }

@@ -23,11 +23,11 @@
 
 // Reading from sensor 
 #define SAMPLING_RATE 1
-#define SAMPLING_PERIOD 2000
+#define SAMPLING_PERIOD 6'000
 
 // Writing to SD 
 #define WRITING_TO_SD_RATE 1
-#define WRITING_TO_SD_PERIOD 2000
+#define WRITING_TO_SD_PERIOD 6'000
 
 // --- Queue Configuration ---
 #define WIFI_CLIENT_QUEUE_SIZE 100
@@ -114,6 +114,18 @@ void loop() {
     }
 
 
+    // DEBUG: 
+    UBaseType_t itemsWaiting_wclientQueue = uxQueueMessagesWaiting(wclientQueue);  
+    UBaseType_t freeSpaces_wclientQueue = uxQueueSpacesAvailable(wclientQueue);
+    safePrintf("wclientQueue");
+    safePrintf("Items waiting: %u, Free Space: %u\n", (unsigned int)itemsWaiting_wclientQueue, (unsigned int)freeSpaces_wclientQueue );
+    UBaseType_t itemsWaiting_sdQueue = uxQueueMessagesWaiting(sdQueue);  
+    UBaseType_t freeSpaces_sdQueue = uxQueueSpacesAvailable(sdQueue);
+    safePrintf("sdQueue");
+    safePrintf("Items waiting: %u, Free Space: %u\n", (unsigned int)itemsWaiting_sdQueue, (unsigned int)freeSpaces_sdQueue);
+
+
+
     // Enter sleep mode
 
   }
@@ -122,6 +134,20 @@ void loop() {
 
 
 // -- Helper Functions --
+
+// Droppest oldest element in the queue and adds new element
+void queue_push_overwrite(QueueHandle_t myQueue, const data *newItem) {
+    // 1. Try to send the new item without blocking (0 ticks wait)
+    if (xQueueSend(myQueue, newItem, 0) != pdPASS) {
+        
+        // 2. Queue is full; pop and discard the oldest item
+        int droppedItem;
+        xQueueReceive(myQueue, &droppedItem, 0);
+
+        // 3. Push the new item into the newly freed space
+        xQueueSend(myQueue, newItem, 0);
+    }
+}
 
 // --- Thread-Safe Print Function ---
 void safePrintf(const char *format, ...) {
