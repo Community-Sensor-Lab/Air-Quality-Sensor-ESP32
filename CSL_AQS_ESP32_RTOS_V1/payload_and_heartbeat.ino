@@ -8,7 +8,6 @@ void initializeClient() {
 // --- Payload Upload (Runs independently on Core 0) ---
 void doPost(String outstr) {
   HTTPClient http;
-  // Check queue condition first
 
   if (WiFi.status() != WL_CONNECTED) {
     safePrintf("[Upload] Wi-Fi disconnected, skipping upload.");
@@ -38,11 +37,10 @@ void doPost(String outstr) {
   } else {
     safePrintf("[Upload] Failed to initialize HTTP client connection.");
   }
-
-  //sendHeartbeat();
+  
 }
 
-// --- Heartbeat Task (Runs independently on Core 0) ---
+// --- Heartbeat Task ---
 void sendHeartbeat() {
   HTTPClient http;
   safePrintf("Initialize Heartbeat Task");
@@ -75,7 +73,7 @@ void sendHeartbeat() {
   }
 }
 
-// --- Payload preparation ---
+// --- Prepare payload ---
 String preparePayload(data& sensorData) {
   return (sensorData.now + String(", ")             // Datetime
           + String(sensorData.Tbme) + String(", ")  // BME

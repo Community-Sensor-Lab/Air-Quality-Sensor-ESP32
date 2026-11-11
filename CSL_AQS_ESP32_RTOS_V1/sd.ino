@@ -14,7 +14,7 @@ void writingToSDTask(void *pvParameters) {
       safePrintf("No SD card attached");
       //return;
     } else {
-      Serial.print("Starting SD card...\t\t");
+      safePrintf("Starting SD card...\t\t");
       // Create file
       for (uint16_t i = 0; i <= 9999; i++) {
         filename[4] = i / 1000 + '0';  //48 ascii character value of 0 //integer division by
@@ -27,7 +27,7 @@ void writingToSDTask(void *pvParameters) {
           logfile.flush();
           logfile.close();
           fileCreated = true;
-          Serial.printf("Logging to file: %s\n", filename);
+          safePrintf("Logging to file: %s\n", filename);
           break;  // leave the loop
         }
       }
@@ -78,7 +78,7 @@ void writingToSDTask(void *pvParameters) {
               }
             }
           }
-          vTaskDelay(pdMS_TO_TICKS(2000));
+          vTaskDelay(pdMS_TO_TICKS(WRITING_TO_SD_PERIOD));
         }
       }
     }

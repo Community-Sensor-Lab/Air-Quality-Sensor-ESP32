@@ -24,7 +24,7 @@
 #define VBATPIN A13  // this is also D9 button A disable pullup to read analog
 #define BUTTON_A 15  // for the adafruit Feather ESP32 v2 (ABC, 15 32 14) Oled button also A7 enable pullup to read button
 #define BUTTON_B 32  // for the adafruit Feather ESP32 v2 (ABC, 15 32 14) Oled button also A7 enable pullup to read button
-#define WIFI_TIMEOUT 1000 // how long to wait for connection in ms
+#define WIFI_TIMEOUT 10'000 // how long to wait for connection in ms
 //#define SD_CS 10    // Chip select for SD card default for Adalogger
 
 // Title of the columns

@@ -21,10 +21,13 @@
 #include <HTTPClient.h>
 //#include <secrets.h>
 
-// Number of readings per interval
+// Reading from sensor 
 #define SAMPLING_RATE 1
-// Time of samping interval
 #define SAMPLING_PERIOD 2000
+
+// Writing to SD 
+#define WRITING_TO_SD_RATE 1
+#define WRITING_TO_SD_PERIOD 2000
 
 // --- Queue Configuration ---
 #define WIFI_CLIENT_QUEUE_SIZE 100
@@ -35,8 +38,7 @@
 // -- Program Configuration
 #define TESTING_MODE false
 #define RECONNECT_TO_WIFI true
-// Make the
-// #define SD_PRESENT true
+
 
 SemaphoreHandle_t serialMutex;  // Used to prevent race conditions when threads in core 1 and core 0 use serial.
 
@@ -49,18 +51,11 @@ String prepareData(data &sensorData);
 void readSensorsAndRTCTask(void *pvParameters);
 String preparePayload(data &sensorData);
 void writingToSDTask(void *pvParameters);
+void syncRTCFromNPT();
+void provisioning();
 
 void setup() {
   Serial.begin(115200);
-
-  wclientQueue = xQueueCreate(WIFI_CLIENT_QUEUE_SIZE, sizeof(data));
-  sdQueue = xQueueCreate(SD_QUEUE_SIZE, sizeof(data));
-
-  if (wclientQueue == NULL || sdQueue == NULL) {
-    Serial.println("Queue allocation failed!");
-    while (1)
-      ;
-  }
 
   serialMutex = xSemaphoreCreateMutex();
   if (serialMutex == NULL) {
@@ -72,61 +67,24 @@ void setup() {
   initializeOLED(display);
   provisioning();
 
-  Serial.printf("10s to decide\n");
-  unsigned long ts = millis();
-
-  if (provisionInfo.valid) {  // ENTER IF PROVISION VALID, EXIT IF EITHER A OR B PRESSED OR TIMEOUT. IF EEPROM READ IS INVALID SKIPS
-    int i = 10;
-
-    while (millis() - ts < WIFI_TIMEOUT && provisionInfo.valid && provisionInfo.WiFiPresent) {
-      Serial.printf("%d ", i--);
-      delay(1000);
-    }
-    Serial.println();
-  }
-
-  // If we have a valid provision and wifi, try it out
-  if (provisionInfo.valid && provisionInfo.WiFiPresent) {
-    connectToWiFi();
-  }
-
-  // Go for provisioning. ENTER HERE IF TIMED OUT OR PROVISION NOT VALID OR A PRESSED OR B PRESSED
-  while (!provisionInfo.valid && provisionInfo.WiFiPresent) {  // ENTER IF A PRESSED OR PROVISION NOT VALID
-
-    uint32_t mac_reversed = (uint32_t)(ESP.getEfuseMac() >> 24) & 0xFFFFFF;
-    uint32_t mac_original = ((mac_reversed & 0xFF) << 16) | ((mac_reversed & 0xFF00)) | ((mac_reversed & 0xFF0000) >> 16);  //Shift addresses to correct positions
-
-    mac_ssid = "csl-" + String(mac_original, HEX);
-    // mac_ssid = "csl-" + String((uint32_t)(ESP.getEfuseMac() >> 24) & 0xFFFFFF, HEX);
-
-    Serial.println("going to softAPprovision");
-    softAPprovision();  // may change to not valid
-    if (provisionInfo.valid && provisionInfo.WiFiPresent) {
-      connectToWiFi();
+  if (provisionInfo.WiFiPresent) {
+    
+    wclientQueue = xQueueCreate(WIFI_CLIENT_QUEUE_SIZE, sizeof(data));
+    if (wclientQueue == NULL) {
+      Serial.println("Queue allocation failed!");
+      while (1);
     }
   }
 
-  if (!provisionInfo.WiFiPresent) {
-    Serial.println("No WiFi present. Continuing without WiFi.");
-    display.printf("No WiFi\n");
-    display.display();
+  
+  
+  sdQueue = xQueueCreate(SD_QUEUE_SIZE, sizeof(data));
+
+  if (wclientQueue == NULL || sdQueue == NULL) {
+    Serial.println("Queue allocation failed!");
+    while (1)
+      ;
   }
-
-
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\nWiFi Connected!");
-    syncRTCFromNPT();
-  } else {
-    Serial.println("\nWiFi Connection Failed!");
-  }
-
-
-  // Set the Root CA certificate for strict validation
-  client.setCACert(test_root_ca);
-  Serial.println("*** Adding header to google sheet. ");
-  doPost(PRE_PAYLOAD_ADD_HEADER HEADER);
-  Serial.println("\n*** Done adding header to google sheet");
-
 
   // Spawn independent threads on Core 0
   xTaskCreatePinnedToCore(readSensorsAndRTCTask, "readSensors", 4096, NULL, 2, NULL, 0);
@@ -136,6 +94,7 @@ void setup() {
 // --- Main Thread: (Runs on Core 1) ---
 void loop() {
   safePrintf("Main loop running...");
+  // Wake up from sleeping mode
   if (uxQueueMessagesWaiting(wclientQueue) >= WIFI_QUEUE_BATCH_SIZE) {
     if (WiFi.status() != WL_CONNECTED) {
       safePrintf("WiFi Disconnected");
@@ -153,6 +112,10 @@ void loop() {
         doPost(preparePayload(sensorData));
       }
     }
+
+
+    // Enter sleep mode
+
   }
   vTaskDelay(pdMS_TO_TICKS(700));
 }

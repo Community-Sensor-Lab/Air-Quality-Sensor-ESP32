@@ -22,7 +22,7 @@
 * @return void
 */
 void initializeBME280(Adafruit_BME280& bme280) {
-  Serial.print("Starting BME280 TPRH...\t\t");
+  safePrintf("Starting BME280 TPRH...\t\t");
   // You can also pass in a Wire library object like &Wire2
   // bmeStatus = bme.begin(0x76, &Wire2)
   if (!bme280.begin()) {
@@ -61,7 +61,7 @@ void readBME(Adafruit_BME280& bme280, data& reading) {
 * @return void
 */
 void initializeSCD41(SCD4x& scd41) {
-  Serial.print("Starting SCD41 CO2...\t\t");
+  safePrintf("Starting SCD41 CO2...\t\t");
   //mySensor.enableDebugging(); // Uncomment this line to get helpful debug messages on Serial
   if (scd41.begin(false, false, false) == false)  // measBegin, autoCal, skipStopPeriodicMeasurements i.e. Do not start periodic measurements
   {
@@ -73,10 +73,11 @@ void initializeSCD41(SCD4x& scd41) {
     safePrintf("SCD41 measureSingleShot failed");
     display.println("SCD41 measureSingleShot failed");
     display.display();
-  } else
+  } else {
     safePrintf("SCD41 connected");
-  display.println("SCD41 connected");
-  display.display();
+    display.println("SCD41 connected");
+    display.display();
+  }
 }
 
 /**
@@ -89,7 +90,7 @@ void readSCD41(SCD4x& scd41, data& reading) {
   scd41.measureSingleShot();        // Request fresh data (should take 5 seconds)
   while (!scd41.readMeasurement())  // readMeasurement will return true when fresh data is available
   {
-    Serial.print("+");
+    safePrintf("+");
     delay(500);
   }
   reading.CO2 = scd41.getCO2();
@@ -114,7 +115,7 @@ void readSCD41(SCD4x& scd41, data& reading) {
 * @return void
 */
 void initializeSEN55(SensirionI2CSen5x& sen55) {
-  Serial.print("Starting SEN55 PM2.5...\t\t");
+  safePrintf("Starting SEN55 PM2.5...\t\t");
   Wire.begin();
   sen55.begin(Wire);
 
@@ -122,7 +123,7 @@ void initializeSEN55(SensirionI2CSen5x& sen55) {
   char errorMessage[256];
   error = sen55.deviceReset();
   if (error) {
-    Serial.print("Error trying to execute deviceReset(): ");
+    safePrintf("Error trying to execute deviceReset(): ");
     errorToString(error, errorMessage, 256);
     safePrintf(errorMessage);
   }
@@ -130,7 +131,7 @@ void initializeSEN55(SensirionI2CSen5x& sen55) {
   float tempOffset = 0.0;
   error = sen55.setTemperatureOffsetSimple(tempOffset);
   if (error) {
-    Serial.print("Error trying to execute setTemperatureOffsetSimple(): ");
+    safePrintf("Error trying to execute setTemperatureOffsetSimple(): ");
     errorToString(error, errorMessage, 256);
     safePrintf(errorMessage);
   } else {
@@ -138,13 +139,13 @@ void initializeSEN55(SensirionI2CSen5x& sen55) {
   }
   error = sen55.startMeasurement();
   if (error) {
-    Serial.print("Error trying to execute startMeasurement(): ");
+    safePrintf("Error trying to execute startMeasurement(): ");
     errorToString(error, errorMessage, 256);
     safePrintf(errorMessage);
   } else {
     safePrintf("SEN55 connected");
-    //display.println("SEN55 connected");
-    //display.display();
+    display.println("SEN55 connected");
+    display.display();
   }
 }
 
@@ -170,7 +171,7 @@ void readSEN55(SensirionI2CSen5x& sen55, data& reading) {
     reading.NOx);
 
   if (error) {
-    Serial.print("Error trying to execute readMeasuredValues(): ");
+    safePrintf("Error trying to execute readMeasuredValues(): ");
     errorToString(error, errorMessage, 256);
     safePrintf(errorMessage);
   }
@@ -188,7 +189,7 @@ void readSEN55(SensirionI2CSen5x& sen55, data& reading) {
     reading.tpSize);
 
   if (error) {
-    Serial.print("Error trying to execute readMeasuredPmValues(): ");
+    safePrintf("Error trying to execute readMeasuredPmValues(): ");
     errorToString(error, errorMessage, 256);
     safePrintf(errorMessage);
   }
@@ -207,7 +208,7 @@ void readSensorsAndRTCTask(void* pvParameters) {
   display.setCursor(0, 0);
 
   RTC_PCF8523 rtc;
-  Serial.print("Starting RTC...\t\t\t");
+  safePrintf("Starting RTC...\t\t\t");
 
   Wire.begin();  // connect to RTC
   if (!rtc.begin()) {
