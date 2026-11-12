@@ -93,11 +93,19 @@ void doPost(String outstr) {
     delay(200);
     Serial.println("\nResponse from client: ");
 
+    unsigned starttime = millis();
+    const unsigned timeout = 10000;
+
     while (client.connected()) {
       while (client.available()) {
         char c = client.read();
         Serial.write(c);
       }
+      if (millis()-starttime >= timeout){
+        Serial.print("No server response receieved");
+        break;
+      }
+      delay(10);
     }
     client.stop();
   }
